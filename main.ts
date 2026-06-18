@@ -79,8 +79,15 @@ class ColumnsView extends BasesView implements HoverParent {
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
   }
 
-  onload(): void {}
+  onload(): void {
+    this.render();
+  }
+
   onunload(): void {}
+
+  getDisplayText(): string {
+    return "Columns";
+  }
 
   focus(): void {
     this.containerEl.focus({ preventScroll: true });
@@ -222,6 +229,14 @@ class ColumnsView extends BasesView implements HoverParent {
     this.containerEl.empty();
 
     const entries = this.data?.entries ?? [];
+
+    // If no entries, show a helpful message
+    if (entries.length === 0) {
+      const emptyEl = this.containerEl.createDiv({ cls: "columns-empty" });
+      emptyEl.textContent = "No files found. Create a .base file in your vault, configure its query, then switch to Columns view.";
+      return;
+    }
+
     const folder = this.getSourceFolder();
     const columnProp = this.getColumnProperty();
 

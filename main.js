@@ -61,8 +61,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
   }
   onload() {
+    this.render();
   }
   onunload() {
+  }
+  getDisplayText() {
+    return "Columns";
   }
   focus() {
     this.containerEl.focus({ preventScroll: true });
@@ -185,6 +189,11 @@ var ColumnsView = class extends import_obsidian.BasesView {
   render() {
     this.containerEl.empty();
     const entries = this.data?.entries ?? [];
+    if (entries.length === 0) {
+      const emptyEl = this.containerEl.createDiv({ cls: "columns-empty" });
+      emptyEl.textContent = "No files found. Create a .base file in your vault, configure its query, then switch to Columns view.";
+      return;
+    }
     const folder = this.getSourceFolder();
     const columnProp = this.getColumnProperty();
     const prefix = folder ? folder.endsWith("/") ? folder : folder + "/" : "";
