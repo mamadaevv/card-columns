@@ -360,6 +360,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Open file
   // -----------------------------------------------------------------------
   openFile(file) {
+    const alreadyOpen = this.app.workspace.getLeavesOfType("markdown").find(
+      (l) => l.view?.file?.path === file.path
+    );
+    if (alreadyOpen) {
+      this.app.workspace.setActiveLeaf(alreadyOpen, { focus: true });
+      return;
+    }
     const behavior = this.getOpenBehavior();
     switch (behavior) {
       case "active": {
@@ -377,7 +384,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
         break;
       }
       case "split": {
-        const leaf = this.app.workspace.getLeaf("split", "horizontal");
+        const leaf = this.app.workspace.getLeaf("split", "vertical");
         leaf.openFile(file);
         break;
       }

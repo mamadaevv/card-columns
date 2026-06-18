@@ -458,6 +458,15 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   private openFile(file: TFile): void {
+    // Check if file is already open — if so, just navigate there
+    const alreadyOpen = this.app.workspace.getLeavesOfType("markdown").find(
+      (l) => (l.view as any)?.file?.path === file.path,
+    );
+    if (alreadyOpen) {
+      this.app.workspace.setActiveLeaf(alreadyOpen, { focus: true });
+      return;
+    }
+
     const behavior = this.getOpenBehavior();
 
     switch (behavior) {
@@ -476,7 +485,7 @@ class ColumnsView extends BasesView {
         break;
       }
       case "split": {
-        const leaf = this.app.workspace.getLeaf("split", "horizontal");
+        const leaf = this.app.workspace.getLeaf("split", "vertical");
         leaf.openFile(file);
         break;
       }
