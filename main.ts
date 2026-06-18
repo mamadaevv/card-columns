@@ -357,9 +357,14 @@ class ColumnsView extends BasesView {
         (this.activeFilters.size === 0 ? " is-active" : ""),
     });
     allPill.textContent = "All";
-    allPill.addEventListener("click", () => {
+    const clearFilters = () => {
       this.activeFilters.clear();
       this.render();
+    };
+    allPill.addEventListener("click", clearFilters);
+    allPill.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      clearFilters();
     });
 
     for (const tag of tags) {

@@ -289,9 +289,14 @@ var ColumnsView = class extends import_obsidian.BasesView {
       cls: "columns-filter-pill" + (this.activeFilters.size === 0 ? " is-active" : "")
     });
     allPill.textContent = "All";
-    allPill.addEventListener("click", () => {
+    const clearFilters = () => {
       this.activeFilters.clear();
       this.render();
+    };
+    allPill.addEventListener("click", clearFilters);
+    allPill.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      clearFilters();
     });
     for (const tag of tags) {
       const pill = barEl.createSpan({
