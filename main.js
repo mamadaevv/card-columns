@@ -131,7 +131,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const id = this.config?.getAsPropertyId(key);
     if (!id) return null;
     const parsed = (0, import_obsidian.parsePropertyId)(id);
-    return parsed?.property ?? null;
+    return parsed?.name ?? null;
   }
   getSourceFolder() {
     return this.cfg(CFG_SOURCE_FOLDER, "");

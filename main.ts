@@ -156,7 +156,7 @@ class ColumnsView extends BasesView implements HoverParent {
     const id = this.config?.getAsPropertyId(key);
     if (!id) return null;
     const parsed = parsePropertyId(id);
-    return parsed?.property ?? null;
+    return parsed?.name ?? null;
   }
 
   private getSourceFolder(): string {
