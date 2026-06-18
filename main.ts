@@ -60,6 +60,7 @@ class ColumnsView extends BasesView {
 
   activeFilters: Set<string> = new Set();
   andMode = true;
+  private splitLeaf: WorkspaceLeaf | null = null;
 
   constructor(
     controller: QueryController,
@@ -469,6 +470,15 @@ class ColumnsView extends BasesView {
     return file.basename;
   }
 
+  /** Check if a leaf is still part of the workspace. */
+  private isLeafAttached(leaf: WorkspaceLeaf): boolean {
+    let found = false;
+    this.app.workspace.iterateAllLeaves((l) => {
+      if (l === leaf) found = true;
+    });
+    return found;
+  }
+
   // -----------------------------------------------------------------------
   //  Open file
   // -----------------------------------------------------------------------
@@ -501,8 +511,14 @@ class ColumnsView extends BasesView {
         break;
       }
       case "split": {
-        const leaf = this.app.workspace.getLeaf("split", "vertical");
-        leaf.openFile(file);
+        // Reuse existing split leaf if still attached
+        if (this.splitLeaf && this.isLeafAttached(this.splitLeaf)) {
+          this.splitLeaf.openFile(file);
+          this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: true });
+        } else {
+          this.splitLeaf = this.app.workspace.getLeaf("split", "vertical");
+          this.splitLeaf.openFile(file);
+        }
         break;
       }
     }

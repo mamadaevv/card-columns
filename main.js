@@ -53,6 +53,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.type = "columns";
     this.activeFilters = /* @__PURE__ */ new Set();
     this.andMode = true;
+    this.splitLeaf = null;
     this.scrollEl = scrollEl;
     this.plugin = plugin;
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
@@ -370,6 +371,14 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (typeof val === "number") return String(val);
     return file.basename;
   }
+  /** Check if a leaf is still part of the workspace. */
+  isLeafAttached(leaf) {
+    let found = false;
+    this.app.workspace.iterateAllLeaves((l) => {
+      if (l === leaf) found = true;
+    });
+    return found;
+  }
   // -----------------------------------------------------------------------
   //  Open file
   // -----------------------------------------------------------------------
@@ -398,8 +407,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
         break;
       }
       case "split": {
-        const leaf = this.app.workspace.getLeaf("split", "vertical");
-        leaf.openFile(file);
+        if (this.splitLeaf && this.isLeafAttached(this.splitLeaf)) {
+          this.splitLeaf.openFile(file);
+          this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: true });
+        } else {
+          this.splitLeaf = this.app.workspace.getLeaf("split", "vertical");
+          this.splitLeaf.openFile(file);
+        }
         break;
       }
     }
