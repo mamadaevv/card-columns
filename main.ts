@@ -275,12 +275,12 @@ class ColumnsView extends BasesView {
 
     // Collect all tags for each file (for AND mode)
     const fileTags = new Map<string, string[]>();
-    for (const [, colEntries] of columnMap) {
+    for (const [colValue, colEntries] of columnMap) {
       for (const entry of colEntries) {
         const p = entry.file?.path;
         if (!p) continue;
         if (!fileTags.has(p)) fileTags.set(p, []);
-        fileTags.get(p)!.push(val);
+        fileTags.get(p)!.push(colValue);
       }
     }
 

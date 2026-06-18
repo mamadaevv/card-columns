@@ -224,12 +224,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
     }
     const fileTags = /* @__PURE__ */ new Map();
-    for (const [, colEntries] of columnMap) {
+    for (const [colValue, colEntries] of columnMap) {
       for (const entry of colEntries) {
         const p = entry.file?.path;
         if (!p) continue;
         if (!fileTags.has(p)) fileTags.set(p, []);
-        fileTags.get(p).push(val);
+        fileTags.get(p).push(colValue);
       }
     }
     const applyFilters = (paths) => {
@@ -338,12 +338,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const title = this.getCardTitle(file);
     titleEl.textContent = title;
     for (const propId of visibleProps) {
-      const val2 = entry.getValue(propId);
-      if (!val2 || val2.isTruthy() === false) continue;
+      const val = entry.getValue(propId);
+      if (!val || val.isTruthy() === false) continue;
       const chip = cardEl.createSpan({ cls: "columns-card-chip" });
       const parsed = (0, import_obsidian.parsePropertyId)(propId);
       const label = parsed?.name ?? propId;
-      chip.textContent = `${label}: ${val2.toString()}`;
+      chip.textContent = `${label}: ${val.toString()}`;
     }
     cardEl.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -360,9 +360,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const prop = this.getTitleProperty();
     if (!prop) return file.basename;
     const cache = this.app.metadataCache.getFileCache(file);
-    const val2 = cache?.frontmatter?.[prop];
-    if (typeof val2 === "string") return val2;
-    if (typeof val2 === "number") return String(val2);
+    const val = cache?.frontmatter?.[prop];
+    if (typeof val === "string") return val;
+    if (typeof val === "number") return String(val);
     return file.basename;
   }
   // -----------------------------------------------------------------------
