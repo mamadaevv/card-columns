@@ -111,12 +111,6 @@ class ColumnsView extends BasesView {
         placeholder: "Auto-detect",
       },
       {
-        displayName: "Card title property",
-        type: "property",
-        key: CFG_TITLE_PROP,
-        placeholder: "File name",
-      },
-      {
         key: CFG_COL_WIDTH,
         type: "slider",
         displayName: "Column width (px)",
@@ -124,6 +118,29 @@ class ColumnsView extends BasesView {
         min: 150,
         max: 500,
         step: 10,
+      },
+      {
+        type: "group" as const,
+        displayName: "Card",
+        items: [
+          {
+            key: CFG_OPEN_BEHAVIOR,
+            type: "dropdown" as const,
+            displayName: "Open card in",
+            default: "modal",
+            options: {
+              active: "Active pane",
+              modal: "Floating modal",
+              tab: "New tab",
+            },
+          },
+          {
+            key: CFG_TITLE_PROP,
+            type: "property" as const,
+            displayName: "Card title property",
+            placeholder: "File name",
+          },
+        ],
       },
     ];
   }
