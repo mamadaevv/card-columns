@@ -376,20 +376,20 @@ class ColumnsView extends BasesView {
           (this.activeFilters.has(tag) ? " is-active" : ""),
       });
       pill.textContent = tag;
-      // ЛКМ — toggle (добавить/убрать)
-      pill.addEventListener("click", () => {
+      // ЛКМ — выбрать только этот тег
+      pill.addEventListener("click", (e) => {
+        this.activeFilters.clear();
+        this.activeFilters.add(tag);
+        this.render();
+      });
+      // ПКМ — toggle (добавить/убрать)
+      pill.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
         if (this.activeFilters.has(tag)) {
           this.activeFilters.delete(tag);
         } else {
           this.activeFilters.add(tag);
         }
-        this.render();
-      });
-      // ПКМ — выбрать только этот тег
-      pill.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        this.activeFilters.clear();
-        this.activeFilters.add(tag);
         this.render();
       });
     }

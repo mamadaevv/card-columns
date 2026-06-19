@@ -305,18 +305,18 @@ var ColumnsView = class extends import_obsidian.BasesView {
         cls: "columns-filter-pill" + (this.activeFilters.has(tag) ? " is-active" : "")
       });
       pill.textContent = tag;
-      pill.addEventListener("click", () => {
+      pill.addEventListener("click", (e) => {
+        this.activeFilters.clear();
+        this.activeFilters.add(tag);
+        this.render();
+      });
+      pill.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
         if (this.activeFilters.has(tag)) {
           this.activeFilters.delete(tag);
         } else {
           this.activeFilters.add(tag);
         }
-        this.render();
-      });
-      pill.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        this.activeFilters.clear();
-        this.activeFilters.add(tag);
         this.render();
       });
     }
