@@ -153,7 +153,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const raw = this.config?.get(CFG_TITLE_PROP);
     if (typeof raw === "string") return raw;
     const id = this.config?.getAsPropertyId(CFG_TITLE_PROP);
-    return id ?? null;
+    if (id) return id;
+    const colProp = this.getColumnProperty();
+    return colProp ? `note.${colProp}` : null;
   }
   getColumnWidth() {
     const v = this.cfg(CFG_COL_WIDTH, 300);
