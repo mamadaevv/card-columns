@@ -226,13 +226,12 @@ class ColumnsView extends BasesView {
     return [];
   }
 
-  /** Get visible properties from the Properties button, skip column prop and title prop. */
-  private getVisiblePropertyIds(columnProp: string): string[] {
+  /** Get visible properties from the Properties button. */
+  private getVisiblePropertyIds(): string[] {
     const props = this.config?.getOrder() ?? [];
     return props.filter((id) => {
       const parsed = parsePropertyId(id);
       if (!parsed) return false;
-      if (parsed.name === columnProp) return false;
       const titleProp = this.getTitleProperty();
       if (titleProp && parsed.name === titleProp) return false;
       return true;
@@ -319,7 +318,7 @@ class ColumnsView extends BasesView {
     if (noValueEntries.length > 0) colNames.push("(No value)");
 
     const colWidth = this.getColumnWidth();
-    const visibleProps = this.getVisiblePropertyIds(columnProp);
+    const visibleProps = this.getVisiblePropertyIds();
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
 
     for (const colName of colNames) {

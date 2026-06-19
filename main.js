@@ -187,13 +187,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (typeof raw === "number") return [String(raw)];
     return [];
   }
-  /** Get visible properties from the Properties button, skip column prop and title prop. */
-  getVisiblePropertyIds(columnProp) {
+  /** Get visible properties from the Properties button. */
+  getVisiblePropertyIds() {
     const props = this.config?.getOrder() ?? [];
     return props.filter((id) => {
       const parsed = (0, import_obsidian.parsePropertyId)(id);
       if (!parsed) return false;
-      if (parsed.name === columnProp) return false;
       const titleProp = this.getTitleProperty();
       if (titleProp && parsed.name === titleProp) return false;
       return true;
@@ -258,7 +257,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     }
     if (noValueEntries.length > 0) colNames.push("(No value)");
     const colWidth = this.getColumnWidth();
-    const visibleProps = this.getVisiblePropertyIds(columnProp);
+    const visibleProps = this.getVisiblePropertyIds();
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
     for (const colName of colNames) {
       let colEntries;
