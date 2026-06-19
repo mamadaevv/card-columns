@@ -61,6 +61,7 @@ class ColumnsView extends BasesView {
   activeFilters: Set<string> = new Set();
   andMode = true;
   private splitLeaf: WorkspaceLeaf | null = null;
+  private splitQueue = Promise.resolve();
 
   constructor(
     controller: QueryController,
@@ -480,6 +481,21 @@ class ColumnsView extends BasesView {
     return found;
   }
 
+  /** Wait until a leaf's view is fully loaded (not DeferredView). */
+  private waitForLeafReady(leaf: WorkspaceLeaf): Promise<void> {
+    return new Promise((resolve) => {
+      const check = () => {
+        const v = (leaf.view as any);
+        if (v && v.getViewType && v.getViewType() !== "empty") {
+          resolve();
+        } else {
+          requestAnimationFrame(check);
+        }
+      };
+      check();
+    });
+  }
+
   // -----------------------------------------------------------------------
   //  Open file
   // -----------------------------------------------------------------------
@@ -513,12 +529,17 @@ class ColumnsView extends BasesView {
       }
       case "split":
       case "split-bottom": {
-        if (this.splitLeaf && this.isLeafAttached(this.splitLeaf)) {
-          this.splitLeaf.detach();
-        }
-        const dir: any = behavior === "split-bottom" ? "horizontal" : "vertical";
-        this.splitLeaf = this.app.workspace.getLeaf("split", dir);
-        this.splitLeaf.openFile(file);
+        this.splitQueue = this.splitQueue.then(async () => {
+          if (this.splitLeaf && this.isLeafAttached(this.splitLeaf)) {
+            await this.splitLeaf.openFile(file);
+          } else {
+            const dir: any = behavior === "split-bottom" ? "horizontal" : "vertical";
+            this.splitLeaf = this.app.workspace.getLeaf("split", dir);
+            // Wait until the leaf has a real view (not DeferredView)
+            await this.waitForLeafReady(this.splitLeaf);
+            await this.splitLeaf.openFile(file);
+          }
+        }).catch(() => {});
         break;
       }
     }
