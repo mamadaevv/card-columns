@@ -53,21 +53,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.type = "columns";
     this.activeFilters = /* @__PURE__ */ new Set();
     this.andMode = true;
-    this.titlePropIdCached = null;
     this.scrollEl = scrollEl;
     this.plugin = plugin;
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
   }
   onload() {
-    let debounceTimer = null;
-    this.registerEvent(
-      this.app.vault.on("modify", () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.render(), 200);
-      })
-    );
     this.render();
-    setTimeout(() => this.render(), 0);
   }
   onunload() {
   }
@@ -78,22 +69,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.containerEl.focus({ preventScroll: true });
   }
   onDataUpdated() {
-    this.titlePropIdCached = this.getTitlePropertyId();
     this.render();
-  }
-  onload() {
-    this.titlePropIdCached = this.getTitlePropertyId();
-    let debounceTimer = null;
-    this.registerEvent(
-      this.app.vault.on("modify", () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.render(), 200);
-      })
-    );
-    this.render();
-    setTimeout(() => this.render(), 0);
-  }
-  onunload() {
   }
   // -----------------------------------------------------------------------
   //  View options (gear menu)
@@ -173,7 +149,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const fromProp = this.propKey(CFG_TITLE_PROP);
     return fromProp ?? null;
   }
-  /** Get the title property as a full BasesPropertyId (e.g. "note.status"). */
   getTitlePropertyId() {
     const raw = this.config?.get(CFG_TITLE_PROP);
     if (typeof raw === "string") return raw;
@@ -218,11 +193,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
   /** Get visible properties from the Properties button. */
   getVisiblePropertyIds() {
     const props = this.config?.getOrder() ?? [];
+    const columnProp = this.getColumnProperty();
     const titlePropName = this.getTitleProperty();
     const titlePropId = this.getTitlePropertyId();
     return props.filter((id) => {
       const parsed = (0, import_obsidian.parsePropertyId)(id);
       if (!parsed) return false;
+      if (parsed.name === columnProp) return false;
       if (titlePropName && parsed.name === titlePropName) return false;
       if (titlePropId && id === titlePropId) return false;
       return true;
@@ -397,26 +374,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
       this.app.workspace.trigger("file-menu", menu, file, "columns-cards");
       menu.showAtPosition({ x: e.clientX, y: e.clientY });
     });
-  }
-  getCardTitle(file) {
-    const prop = this.getTitleProperty();
-    if (!prop) return file.basename;
-    const cache = this.app.metadataCache.getFileCache(file);
-    let val = cache?.frontmatter?.[prop];
-    if (typeof val === "string") return val;
-    if (typeof val === "number") return String(val);
-    if (this.data?.data) {
-      for (const entry of this.data.data) {
-        if (entry.file?.path === file.path) {
-          const entryVal = entry.getValue(`note.${prop}`);
-          if (entryVal && typeof entryVal.toString() === "string" && entryVal.toString().length > 0) {
-            return entryVal.toString();
-          }
-          break;
-        }
-      }
-    }
-    return file.basename;
   }
   // -----------------------------------------------------------------------
   //  Open file

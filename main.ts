@@ -61,7 +61,6 @@ class ColumnsView extends BasesView {
 
   activeFilters: Set<string> = new Set();
   andMode = true;
-  private titlePropIdCached: string | null = null;
 
   constructor(
     controller: QueryController,
@@ -75,18 +74,7 @@ class ColumnsView extends BasesView {
   }
 
   onload(): void {
-    // Debounced re-render when .base config is saved to disk
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    this.registerEvent(
-      this.app.vault.on("modify", () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.render(), 200);
-      }),
-    );
     this.render();
-    // Re-render once config is fully loaded (custom keys may be undefined
-    // during the first render from onload)
-    setTimeout(() => this.render(), 0);
   }
 
   onunload(): void {}
@@ -100,26 +88,8 @@ class ColumnsView extends BasesView {
   }
 
   onDataUpdated(): void {
-    // Refresh cached config values that may not be available during onload
-    this.titlePropIdCached = this.getTitlePropertyId();
     this.render();
   }
-
-  onload(): void {
-    this.titlePropIdCached = this.getTitlePropertyId();
-    // Re-render when .base config is saved to disk
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    this.registerEvent(
-      this.app.vault.on("modify", () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => this.render(), 200);
-      }),
-    );
-    this.render();
-    setTimeout(() => this.render(), 0);
-  }
-
-  onunload(): void {}
 
   // -----------------------------------------------------------------------
   //  View options (gear menu)
@@ -179,13 +149,11 @@ class ColumnsView extends BasesView {
   }
 
   private propKey(key: string): string | null {
-    // Read raw first — works for both custom and built-in keys
     const raw = this.config?.get(key);
     if (typeof raw === "string") {
       const parsed = parsePropertyId(raw as any);
       return parsed?.name ?? raw;
     }
-    // Fallback: try property-ID API
     const id = this.config?.getAsPropertyId(key);
     if (id) {
       const parsed = parsePropertyId(id);
@@ -209,7 +177,6 @@ class ColumnsView extends BasesView {
     return fromProp ?? null;
   }
 
-  /** Get the title property as a full BasesPropertyId (e.g. "note.status"). */
   private getTitlePropertyId(): string | null {
     const raw = this.config?.get(CFG_TITLE_PROP);
     if (typeof raw === "string") return raw;
@@ -262,11 +229,14 @@ class ColumnsView extends BasesView {
   /** Get visible properties from the Properties button. */
   private getVisiblePropertyIds(): string[] {
     const props = this.config?.getOrder() ?? [];
+    const columnProp = this.getColumnProperty();
     const titlePropName = this.getTitleProperty();
     const titlePropId = this.getTitlePropertyId();
     return props.filter((id) => {
       const parsed = parsePropertyId(id);
       if (!parsed) return false;
+      // Skip column property — already shown as column headers
+      if (parsed.name === columnProp) return false;
       // Skip if this property is used as the card title
       if (titlePropName && parsed.name === titlePropName) return false;
       if (titlePropId && id === titlePropId) return false;
@@ -420,13 +390,11 @@ class ColumnsView extends BasesView {
           (this.activeFilters.has(tag) ? " is-active" : ""),
       });
       pill.textContent = tag;
-      // ЛКМ — выбрать только этот тег
       pill.addEventListener("click", (e) => {
         this.activeFilters.clear();
         this.activeFilters.add(tag);
         this.render();
       });
-      // ПКМ — toggle (добавить/убрать)
       pill.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         if (this.activeFilters.has(tag)) {
@@ -504,32 +472,6 @@ class ColumnsView extends BasesView {
       this.app.workspace.trigger("file-menu", menu, file, "columns-cards");
       menu.showAtPosition({ x: e.clientX, y: e.clientY });
     });
-  }
-
-  private getCardTitle(file: TFile): string {
-    const prop = this.getTitleProperty();
-    if (!prop) return file.basename;
-
-    // Try reading from frontmatter cache first
-    const cache = this.app.metadataCache.getFileCache(file);
-    let val = cache?.frontmatter?.[prop];
-    if (typeof val === "string") return val;
-    if (typeof val === "number") return String(val);
-
-    // Try reading via BasesEntry.getValue for the title property
-    if (this.data?.data) {
-      for (const entry of this.data.data) {
-        if (entry.file?.path === file.path) {
-          const entryVal = entry.getValue(`note.${prop}` as any);
-          if (entryVal && typeof entryVal.toString() === "string" && entryVal.toString().length > 0) {
-            return entryVal.toString();
-          }
-          break;
-        }
-      }
-    }
-
-    return file.basename;
   }
 
   // -----------------------------------------------------------------------
