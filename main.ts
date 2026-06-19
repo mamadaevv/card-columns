@@ -138,7 +138,7 @@ class ColumnsView extends BasesView {
     return null;
   }
 
-  private getColumnProperty(): string {
+  private getColumnProperty(): string | null {
     // Read from the built-in groupBy config (set via toolbar Group by button)
     const cfg = this.config as any;
     const raw: string | undefined = cfg?.groupBy?.property;
@@ -146,7 +146,7 @@ class ColumnsView extends BasesView {
       const parsed = parsePropertyId(raw as any);
       return parsed?.name ?? raw;
     }
-    return "tags";
+    return null;
   }
 
   private getTitleProperty(): string | null {
@@ -220,17 +220,23 @@ class ColumnsView extends BasesView {
     const columnMap = new Map<string, BasesEntry[]>();
     const noValueEntries: BasesEntry[] = [];
 
-    for (const entry of entries) {
-      const file = entry.file;
-      if (!(file instanceof TFile)) continue;
+    if (!columnProp) {
+      // No grouping — show all entries in a single column
+      const allTag = this.getDisplayText();
+      columnMap.set(allTag, [...entries]);
+    } else {
+      for (const entry of entries) {
+        const file = entry.file;
+        if (!(file instanceof TFile)) continue;
 
-      const values = this.getColumnValues(file, columnProp);
-      if (values.length === 0) {
-        noValueEntries.push(entry);
-      } else {
-        for (const v of values) {
-          if (!columnMap.has(v)) columnMap.set(v, []);
-          columnMap.get(v)!.push(entry);
+        const values = this.getColumnValues(file, columnProp);
+        if (values.length === 0) {
+          noValueEntries.push(entry);
+        } else {
+          for (const v of values) {
+            if (!columnMap.has(v)) columnMap.set(v, []);
+            columnMap.get(v)!.push(entry);
+          }
         }
       }
     }

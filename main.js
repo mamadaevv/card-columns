@@ -121,7 +121,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const parsed = (0, import_obsidian.parsePropertyId)(raw);
       return parsed?.name ?? raw;
     }
-    return "tags";
+    return null;
   }
   getTitleProperty() {
     const fromProp = this.propKey(CFG_TITLE_PROP);
@@ -179,16 +179,21 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const columnProp = this.getColumnProperty();
     const columnMap = /* @__PURE__ */ new Map();
     const noValueEntries = [];
-    for (const entry of entries) {
-      const file = entry.file;
-      if (!(file instanceof import_obsidian.TFile)) continue;
-      const values = this.getColumnValues(file, columnProp);
-      if (values.length === 0) {
-        noValueEntries.push(entry);
-      } else {
-        for (const v of values) {
-          if (!columnMap.has(v)) columnMap.set(v, []);
-          columnMap.get(v).push(entry);
+    if (!columnProp) {
+      const allTag = this.getDisplayText();
+      columnMap.set(allTag, [...entries]);
+    } else {
+      for (const entry of entries) {
+        const file = entry.file;
+        if (!(file instanceof import_obsidian.TFile)) continue;
+        const values = this.getColumnValues(file, columnProp);
+        if (values.length === 0) {
+          noValueEntries.push(entry);
+        } else {
+          for (const v of values) {
+            if (!columnMap.has(v)) columnMap.set(v, []);
+            columnMap.get(v).push(entry);
+          }
         }
       }
     }
