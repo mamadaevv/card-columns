@@ -181,10 +181,7 @@ class ColumnsView extends BasesView {
     const raw = this.config?.get(CFG_TITLE_PROP);
     if (typeof raw === "string") return raw;
     const id = this.config?.getAsPropertyId(CFG_TITLE_PROP);
-    if (id) return id;
-    // Fallback: use column property so title prop filter works on first render
-    const colProp = this.getColumnProperty();
-    return colProp ? `note.${colProp}` as any : null;
+    return id ?? null;
   }
 
   private getColumnWidth(): number {
