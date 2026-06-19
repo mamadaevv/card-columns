@@ -18,19 +18,9 @@ import {
 //  Config keys
 // ---------------------------------------------------------------------------
 
-const CFG_COLUMN_PROP = "columnProperty";
 const CFG_TITLE_PROP = "titleProperty";
 const CFG_COL_WIDTH = "columnWidth";
 const CFG_OPEN_BEHAVIOR = "openBehavior";
-
-const PRIORITY_PROPS = [
-  "categories",
-  "tags",
-  "type",
-  "status",
-  "genre",
-  "topic",
-];
 
 // ---------------------------------------------------------------------------
 //  Plugin
@@ -97,13 +87,6 @@ class ColumnsView extends BasesView {
   static getViewOptions(): BasesAllOptions[] {
     return [
       {
-        displayName: "Column property",
-        type: "property",
-        key: CFG_COLUMN_PROP,
-        filter: (prop: string) => !prop.startsWith("file."),
-        placeholder: "Auto-detect",
-      },
-      {
         key: CFG_COL_WIDTH,
         type: "slider",
         displayName: "Column width (px)",
@@ -156,9 +139,10 @@ class ColumnsView extends BasesView {
   }
 
   private getColumnProperty(): string {
-    const fromProp = this.propKey(CFG_COLUMN_PROP);
-    if (fromProp) return fromProp;
-    return this.detectColumnProperty();
+    const id = this.config?.getAsPropertyId('groupByProperty');
+    if (!id) return "tags";
+    const parsed = parsePropertyId(id);
+    return parsed?.name ?? "tags";
   }
 
   private getTitleProperty(): string | null {
@@ -181,28 +165,6 @@ class ColumnsView extends BasesView {
   private getOpenBehavior(): string {
     const v = this.cfg(CFG_OPEN_BEHAVIOR, "active");
     return ["active", "modal", "tab"].includes(v) ? v : "active";
-  }
-
-  private detectColumnProperty(): string {
-    const entries = this.data?.data ?? [];
-    const seen = new Set<string>();
-
-    for (const entry of entries) {
-      if (seen.size >= 50) break;
-      const file = entry.file;
-      if (!(file instanceof TFile) || seen.has(file.path)) continue;
-      seen.add(file.path);
-
-      const cache = this.app.metadataCache.getFileCache(file);
-      if (!cache?.frontmatter) continue;
-
-      for (const prop of PRIORITY_PROPS) {
-        if (prop in cache.frontmatter) {
-          return prop;
-        }
-      }
-    }
-    return "tags";
   }
 
   /** Collect column values from a file's frontmatter. */

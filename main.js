@@ -24,18 +24,9 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var CFG_COLUMN_PROP = "columnProperty";
 var CFG_TITLE_PROP = "titleProperty";
 var CFG_COL_WIDTH = "columnWidth";
 var CFG_OPEN_BEHAVIOR = "openBehavior";
-var PRIORITY_PROPS = [
-  "categories",
-  "tags",
-  "type",
-  "status",
-  "genre",
-  "topic"
-];
 var ColumnsPlugin = class extends import_obsidian.Plugin {
   async onload() {
     this.registerBasesView("columns", {
@@ -75,13 +66,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   static getViewOptions() {
     return [
-      {
-        displayName: "Column property",
-        type: "property",
-        key: CFG_COLUMN_PROP,
-        filter: (prop) => !prop.startsWith("file."),
-        placeholder: "Auto-detect"
-      },
       {
         key: CFG_COL_WIDTH,
         type: "slider",
@@ -131,9 +115,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
     return null;
   }
   getColumnProperty() {
-    const fromProp = this.propKey(CFG_COLUMN_PROP);
-    if (fromProp) return fromProp;
-    return this.detectColumnProperty();
+    const id = this.config?.getAsPropertyId("groupByProperty");
+    if (!id) return "tags";
+    const parsed = (0, import_obsidian.parsePropertyId)(id);
+    return parsed?.name ?? "tags";
   }
   getTitleProperty() {
     const fromProp = this.propKey(CFG_TITLE_PROP);
@@ -152,24 +137,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
   getOpenBehavior() {
     const v = this.cfg(CFG_OPEN_BEHAVIOR, "active");
     return ["active", "modal", "tab"].includes(v) ? v : "active";
-  }
-  detectColumnProperty() {
-    const entries = this.data?.data ?? [];
-    const seen = /* @__PURE__ */ new Set();
-    for (const entry of entries) {
-      if (seen.size >= 50) break;
-      const file = entry.file;
-      if (!(file instanceof import_obsidian.TFile) || seen.has(file.path)) continue;
-      seen.add(file.path);
-      const cache = this.app.metadataCache.getFileCache(file);
-      if (!cache?.frontmatter) continue;
-      for (const prop of PRIORITY_PROPS) {
-        if (prop in cache.frontmatter) {
-          return prop;
-        }
-      }
-    }
-    return "tags";
   }
   /** Collect column values from a file's frontmatter. */
   getColumnValues(file, prop) {
