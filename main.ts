@@ -449,7 +449,7 @@ class ColumnsView extends BasesView {
     // Visible property chips
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
-      if (!val || val.isTruthy() === false) continue;
+      if (val == null) continue;
       const chip = cardEl.createSpan({ cls: "columns-card-chip" });
       const parsed = parsePropertyId(propId);
       const label = parsed?.name ?? propId;
