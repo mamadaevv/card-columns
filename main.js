@@ -58,8 +58,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
   }
   onload() {
+    let debounceTimer = null;
     this.registerEvent(
-      this.app.workspace.on("layout-change", () => this.render())
+      this.app.vault.on("modify", () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.render(), 200);
+      })
     );
     this.render();
   }
@@ -128,15 +132,15 @@ var ColumnsView = class extends import_obsidian.BasesView {
     return v ?? fallback;
   }
   propKey(key) {
-    const id = this.config?.getAsPropertyId(key);
-    if (id) {
-      const parsed = (0, import_obsidian.parsePropertyId)(id);
-      if (parsed?.name) return parsed.name;
-    }
     const raw = this.config?.get(key);
     if (typeof raw === "string") {
       const parsed = (0, import_obsidian.parsePropertyId)(raw);
       return parsed?.name ?? raw;
+    }
+    const id = this.config?.getAsPropertyId(key);
+    if (id) {
+      const parsed = (0, import_obsidian.parsePropertyId)(id);
+      return parsed?.name ?? null;
     }
     return null;
   }

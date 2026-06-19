@@ -74,10 +74,14 @@ class ColumnsView extends BasesView {
   }
 
   onload(): void {
-    // Re-render when the user closes the settings pane (config may have
-    // changed without triggering onDataUpdated)
+    // Re-render when the user saves gear-menu config (rarely — only on .base
+    // file writes), but debounce to avoid thrash on rapid vault edits.
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     this.registerEvent(
-      this.app.workspace.on("layout-change", () => this.render()),
+      this.app.vault.on("modify", () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => this.render(), 200);
+      }),
     );
     this.render();
   }
@@ -154,17 +158,17 @@ class ColumnsView extends BasesView {
   }
 
   private propKey(key: string): string | null {
-    // Try property-ID API first
-    const id = this.config?.getAsPropertyId(key);
-    if (id) {
-      const parsed = parsePropertyId(id);
-      if (parsed?.name) return parsed.name;
-    }
-    // Fallback: read raw and parse
+    // Read raw first — works for both custom and built-in keys
     const raw = this.config?.get(key);
     if (typeof raw === "string") {
       const parsed = parsePropertyId(raw as any);
       return parsed?.name ?? raw;
+    }
+    // Fallback: try property-ID API
+    const id = this.config?.getAsPropertyId(key);
+    if (id) {
+      const parsed = parsePropertyId(id);
+      return parsed?.name ?? null;
     }
     return null;
   }
