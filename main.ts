@@ -125,17 +125,6 @@ class ColumnsView extends BasesView {
         max: 500,
         step: 10,
       },
-      {
-        key: CFG_OPEN_BEHAVIOR,
-        type: "dropdown",
-        displayName: "Open card in",
-        default: "modal",
-        options: {
-          active: "Active pane",
-          modal: "Floating modal",
-          tab: "New tab",
-        },
-      },
     ];
   }
 
