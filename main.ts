@@ -18,7 +18,6 @@ import {
 //  Config keys
 // ---------------------------------------------------------------------------
 
-const CFG_SOURCE_FOLDER = "sourceFolder";
 const CFG_COLUMN_PROP = "columnProperty";
 const CFG_TITLE_PROP = "titleProperty";
 const CFG_COL_WIDTH = "columnWidth";
@@ -98,12 +97,6 @@ class ColumnsView extends BasesView {
   static getViewOptions(): BasesAllOptions[] {
     return [
       {
-        displayName: "Source folder",
-        type: "folder",
-        key: CFG_SOURCE_FOLDER,
-        placeholder: "Entire vault",
-      },
-      {
         displayName: "Column property",
         type: "property",
         key: CFG_COLUMN_PROP,
@@ -160,10 +153,6 @@ class ColumnsView extends BasesView {
       return parsed?.name ?? null;
     }
     return null;
-  }
-
-  private getSourceFolder(): string {
-    return this.cfg(CFG_SOURCE_FOLDER, "");
   }
 
   private getColumnProperty(): string {
@@ -259,22 +248,13 @@ class ColumnsView extends BasesView {
       return;
     }
 
-    const folder = this.getSourceFolder();
     const columnProp = this.getColumnProperty();
-
-    const prefix = folder ? (folder.endsWith("/") ? folder : folder + "/") : "";
-    const filtered = prefix
-      ? entries.filter(
-          (e) =>
-            e.file?.path === folder || e.file?.path?.startsWith(prefix),
-        )
-      : entries;
 
     // Build column map: value → BasesEntry[]
     const columnMap = new Map<string, BasesEntry[]>();
     const noValueEntries: BasesEntry[] = [];
 
-    for (const entry of filtered) {
+    for (const entry of entries) {
       const file = entry.file;
       if (!(file instanceof TFile)) continue;
 
@@ -325,9 +305,6 @@ class ColumnsView extends BasesView {
 
     // Build column display list — only show columns matching selected tags
     let colNames = Array.from(columnMap.keys()).sort();
-    // Show filtered count
-    const totalEl = this.containerEl.createDiv({ cls: "columns-total" });
-    totalEl.textContent = `${totalFiles} file${totalFiles !== 1 ? "s" : ""}`;
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }

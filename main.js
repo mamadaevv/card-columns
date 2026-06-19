@@ -24,7 +24,6 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var CFG_SOURCE_FOLDER = "sourceFolder";
 var CFG_COLUMN_PROP = "columnProperty";
 var CFG_TITLE_PROP = "titleProperty";
 var CFG_COL_WIDTH = "columnWidth";
@@ -76,12 +75,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   static getViewOptions() {
     return [
-      {
-        displayName: "Source folder",
-        type: "folder",
-        key: CFG_SOURCE_FOLDER,
-        placeholder: "Entire vault"
-      },
       {
         displayName: "Column property",
         type: "property",
@@ -136,9 +129,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
       return parsed?.name ?? null;
     }
     return null;
-  }
-  getSourceFolder() {
-    return this.cfg(CFG_SOURCE_FOLDER, "");
   }
   getColumnProperty() {
     const fromProp = this.propKey(CFG_COLUMN_PROP);
@@ -216,15 +206,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       emptyEl.textContent = "No files found.";
       return;
     }
-    const folder = this.getSourceFolder();
     const columnProp = this.getColumnProperty();
-    const prefix = folder ? folder.endsWith("/") ? folder : folder + "/" : "";
-    const filtered = prefix ? entries.filter(
-      (e) => e.file?.path === folder || e.file?.path?.startsWith(prefix)
-    ) : entries;
     const columnMap = /* @__PURE__ */ new Map();
     const noValueEntries = [];
-    for (const entry of filtered) {
+    for (const entry of entries) {
       const file = entry.file;
       if (!(file instanceof import_obsidian.TFile)) continue;
       const values = this.getColumnValues(file, columnProp);
@@ -264,8 +249,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
       return acc + 1;
     }, 0);
     let colNames = Array.from(columnMap.keys()).sort();
-    const totalEl = this.containerEl.createDiv({ cls: "columns-total" });
-    totalEl.textContent = `${totalFiles} file${totalFiles !== 1 ? "s" : ""}`;
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
