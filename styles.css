@@ -65,6 +65,13 @@
   background: var(--interactive-accent);
 }
 
+.columns-total {
+  padding: 4px 12px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 /* ---------------------------------------------------------------------------
   Board (scrollable horizontal area)
   --------------------------------------------------------------------------- */

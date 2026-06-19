@@ -316,8 +316,18 @@ class ColumnsView extends BasesView {
     // Render filter bar
     this.renderFilterBar(columnMap);
 
+    // Calculate total AFTER folder filter
+    const totalFiles = filtered.reduce((acc, e) => {
+      const file = e.file;
+      if (!(file instanceof TFile)) return acc;
+      return acc + 1;
+    }, 0);
+
     // Build column display list — only show columns matching selected tags
     let colNames = Array.from(columnMap.keys()).sort();
+    // Show filtered count
+    const totalEl = this.containerEl.createDiv({ cls: "columns-total" });
+    totalEl.textContent = `${totalFiles} file${totalFiles !== 1 ? "s" : ""}`;
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }

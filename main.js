@@ -258,7 +258,14 @@ var ColumnsView = class extends import_obsidian.BasesView {
       );
     };
     this.renderFilterBar(columnMap);
+    const totalFiles = filtered.reduce((acc, e) => {
+      const file = e.file;
+      if (!(file instanceof import_obsidian.TFile)) return acc;
+      return acc + 1;
+    }, 0);
     let colNames = Array.from(columnMap.keys()).sort();
+    const totalEl = this.containerEl.createDiv({ cls: "columns-total" });
+    totalEl.textContent = `${totalFiles} file${totalFiles !== 1 ? "s" : ""}`;
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
