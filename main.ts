@@ -513,13 +513,21 @@ class ColumnsView extends BasesView {
       }
       case "split":
       case "split-bottom": {
-        // Close previous file before opening new one to avoid race
         if (this.splitLeaf && this.isLeafAttached(this.splitLeaf)) {
           this.splitLeaf.detach();
         }
+        // Find our own leaf and split from it
+        let myLeaf: WorkspaceLeaf | null = null;
+        this.app.workspace.iterateAllLeaves((l) => {
+          if ((l.view as any)?.type === this.type && l.view === this) {
+            myLeaf = l;
+          }
+        });
         const dir: any = behavior === "split-bottom" ? "horizontal" : "vertical";
-        this.splitLeaf = this.app.workspace.getLeaf("split", dir);
-        this.splitLeaf.openFile(file);
+        if (myLeaf) {
+          this.splitLeaf = this.app.workspace.createLeafBySplit(myLeaf, dir, false);
+          void this.splitLeaf.openFile(file);
+        }
         break;
       }
     }

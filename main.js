@@ -412,9 +412,17 @@ var ColumnsView = class extends import_obsidian.BasesView {
         if (this.splitLeaf && this.isLeafAttached(this.splitLeaf)) {
           this.splitLeaf.detach();
         }
+        let myLeaf = null;
+        this.app.workspace.iterateAllLeaves((l) => {
+          if (l.view?.type === this.type && l.view === this) {
+            myLeaf = l;
+          }
+        });
         const dir = behavior === "split-bottom" ? "horizontal" : "vertical";
-        this.splitLeaf = this.app.workspace.getLeaf("split", dir);
-        this.splitLeaf.openFile(file);
+        if (myLeaf) {
+          this.splitLeaf = this.app.workspace.createLeafBySplit(myLeaf, dir, false);
+          void this.splitLeaf.openFile(file);
+        }
         break;
       }
     }
