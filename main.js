@@ -365,10 +365,19 @@ var ColumnsView = class extends import_obsidian.BasesView {
   /** Render inline settings bar (grid, wrap, bold toggles). */
   renderSettingsBar() {
     const barEl = this.containerEl.createDiv({ cls: "columns-settings-bar" });
-    const gridBtn = barEl.createSpan({ cls: "columns-mode-btn" });
-    gridBtn.textContent = this.cfg(CFG_CHIP_GRID, false) ? "Grid" : "Stack";
-    gridBtn.addEventListener("click", () => {
-      this.config?.set(CFG_CHIP_GRID, !this.cfg(CFG_CHIP_GRID, false));
+    const layoutLabel = barEl.createSpan({ cls: "columns-settings-label" });
+    layoutLabel.textContent = "Layout:";
+    const layoutSelect = barEl.createEl("select");
+    const layoutOpts = ["Stack", "Grid"];
+    const curLayout = this.cfg(CFG_CHIP_GRID, false) ? "Grid" : "Stack";
+    for (const opt of layoutOpts) {
+      const option = layoutSelect.createEl("option");
+      option.textContent = opt;
+      option.value = opt;
+      if (opt === curLayout) option.selected = true;
+    }
+    layoutSelect.addEventListener("change", () => {
+      this.config?.set(CFG_CHIP_GRID, layoutSelect.value === "Grid");
       this.render();
     });
     const wrapBtn = barEl.createSpan({ cls: "columns-mode-btn" });

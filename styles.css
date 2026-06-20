@@ -50,6 +50,21 @@
   flex-shrink: 0;
 }
 
+.columns-settings-bar select {
+  font-size: 12px;
+  padding: 1px 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.columns-settings-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .columns-filter-pill {
   display: inline-flex;
   align-items: center;
