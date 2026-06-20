@@ -89,7 +89,7 @@
   max-width: 500px;
   background: var(--background-secondary);
   border-radius: 0;
-  border: 1px solid var(--background-modifier-border);
+  border: none;
   height: 100%;
   min-height: 0;
 }
