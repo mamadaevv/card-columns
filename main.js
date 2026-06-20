@@ -347,6 +347,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const savedH = this.cfg(CFG_FILTER_HEIGHT, 120);
     barEl.style.maxHeight = savedH + "px";
     barEl.style.minHeight = "40px";
+    const resizeOverlay = barEl.createDiv({ cls: "columns-filter-resize-overlay" });
     let startY = 0, startH = 0;
     const onMove = (e) => {
       const h = Math.max(40, startH + (e.clientY - startY));
@@ -358,15 +359,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const h = Math.max(40, startH + (e.clientY - startY));
       this.config?.set(CFG_FILTER_HEIGHT, h);
     };
-    barEl.addEventListener("mousedown", (e) => {
-      if (e.offsetY < barEl.clientHeight - 16) return;
+    resizeOverlay.addEventListener("mousedown", (e) => {
+      e.preventDefault();
       startY = e.clientY;
       startH = barEl.clientHeight;
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
-    });
-    barEl.addEventListener("mousemove", (e) => {
-      barEl.style.cursor = e.offsetY >= barEl.clientHeight - 16 ? "row-resize" : "";
     });
     const modeBtn = barEl.createSpan({ cls: "columns-mode-btn" });
     modeBtn.textContent = this.andMode ? "AND" : "OR";

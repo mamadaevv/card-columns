@@ -413,7 +413,8 @@ class ColumnsView extends BasesView {
     barEl.style.maxHeight = savedH + "px";
     barEl.style.minHeight = "40px";
 
-    // Resize: invisible draggable zone at bottom
+    // Resize overlay — 16px strip at bottom, catches all clicks
+    const resizeOverlay = barEl.createDiv({ cls: "columns-filter-resize-overlay" });
     let startY = 0, startH = 0;
     const onMove = (e: MouseEvent) => {
       const h = Math.max(40, startH + (e.clientY - startY));
@@ -425,15 +426,12 @@ class ColumnsView extends BasesView {
       const h = Math.max(40, startH + (e.clientY - startY));
       this.config?.set(CFG_FILTER_HEIGHT, h);
     };
-    barEl.addEventListener("mousedown", (e) => {
-      if (e.offsetY < barEl.clientHeight - 16) return;
+    resizeOverlay.addEventListener("mousedown", (e) => {
+      e.preventDefault();
       startY = e.clientY;
       startH = barEl.clientHeight;
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
-    });
-    barEl.addEventListener("mousemove", (e) => {
-      barEl.style.cursor = e.offsetY >= barEl.clientHeight - 16 ? "row-resize" : "";
     });
 
     const modeBtn = barEl.createSpan({ cls: "columns-mode-btn" });

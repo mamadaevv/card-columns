@@ -21,6 +21,17 @@
   flex-shrink: 0;
   flex-wrap: wrap;
   overflow-y: auto;
+  position: relative;
+}
+
+.columns-filter-resize-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  cursor: row-resize;
+  z-index: 1;
 }
 
 .columns-mode-btn {
