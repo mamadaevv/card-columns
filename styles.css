@@ -160,7 +160,7 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -209,6 +209,10 @@
   flex-direction: column;
   gap: 2px;
   overflow: hidden;
+}
+
+.columns-card-chip + .columns-card-chip {
+  margin-top: 24px;
 }
 
 .columns-card-chip-label {
