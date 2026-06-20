@@ -1,9 +1,11 @@
 {
   "id": "obsidian-columns",
   "name": "Columns",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.8.0",
-  "description": "Card view grouped by tag/column property with tag filtering",
+  "description": "Kanban-style card view with column grouping, tag filters, and property chips. Group notes by tags or any frontmatter property.",
   "author": "User",
+  "authorUrl": "",
+  "fundingUrl": "",
   "isDesktopOnly": false
 }

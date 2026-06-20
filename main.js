@@ -418,8 +418,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
-    const chipGrid = this.cfg(CFG_CHIP_GRID, "stack");
-    const isGrid = chipGrid === "grid";
+    const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
     const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
     const wrapValues = this.cfg(CFG_WRAP_VALUES, false);
     const chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });

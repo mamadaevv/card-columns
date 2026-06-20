@@ -514,8 +514,7 @@ class ColumnsView extends BasesView {
     titleEl.textContent = title;
 
     // Visible property chips
-    const chipGrid: string = this.cfg(CFG_CHIP_GRID, "stack");
-    const isGrid = chipGrid === "grid";
+    const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
     const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
     const wrapValues = this.cfg(CFG_WRAP_VALUES, false);
     const chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
