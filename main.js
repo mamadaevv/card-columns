@@ -27,6 +27,8 @@ var import_obsidian = require("obsidian");
 var CFG_TITLE_PROP = "titleProperty";
 var CFG_COL_WIDTH = "columnWidth";
 var CFG_OPEN_BEHAVIOR = "openBehavior";
+var CFG_WRAP_TITLE = "wrapTitle";
+var CFG_WRAP_VALUES = "wrapValues";
 var ColumnsPlugin = class extends import_obsidian.Plugin {
   async onload() {
     this.registerBasesView("columns", {
@@ -91,6 +93,18 @@ var ColumnsView = class extends import_obsidian.BasesView {
         type: "property",
         key: CFG_TITLE_PROP,
         placeholder: "File name"
+      },
+      {
+        key: CFG_WRAP_TITLE,
+        type: "toggle",
+        displayName: "Wrap card titles",
+        default: false
+      },
+      {
+        key: CFG_WRAP_VALUES,
+        type: "toggle",
+        displayName: "Wrap multi-line values",
+        default: false
       }
     ];
   }
@@ -324,11 +338,14 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const titlePropId = this.getTitlePropertyId();
     const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.basename : file.basename;
     const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
+    if (this.cfg(CFG_WRAP_TITLE, false)) titleEl.addClass("is-wrap");
     titleEl.textContent = title;
+    const wrapValues = this.cfg(CFG_WRAP_VALUES, false);
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
       if (val == null || val instanceof import_obsidian.NullValue) continue;
       const chip = cardEl.createSpan({ cls: "columns-card-chip" });
+      if (wrapValues) chip.addClass("is-wrap");
       const parsed = (0, import_obsidian.parsePropertyId)(propId);
       const label = parsed?.name ?? propId;
       const labelEl = chip.createSpan({ cls: "columns-card-chip-label" });

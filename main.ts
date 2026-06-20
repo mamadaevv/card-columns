@@ -21,6 +21,8 @@ import {
 const CFG_TITLE_PROP = "titleProperty";
 const CFG_COL_WIDTH = "columnWidth";
 const CFG_OPEN_BEHAVIOR = "openBehavior";
+const CFG_WRAP_TITLE = "wrapTitle";
+const CFG_WRAP_VALUES = "wrapValues";
 
 // ---------------------------------------------------------------------------
 //  Plugin
@@ -111,6 +113,18 @@ class ColumnsView extends BasesView {
         type: "property",
         key: CFG_TITLE_PROP,
         placeholder: "File name",
+      },
+      {
+        key: CFG_WRAP_TITLE,
+        type: "toggle",
+        displayName: "Wrap card titles",
+        default: false,
+      },
+      {
+        key: CFG_WRAP_VALUES,
+        type: "toggle",
+        displayName: "Wrap multi-line values",
+        default: false,
       },
     ];
   }
@@ -411,13 +425,16 @@ class ColumnsView extends BasesView {
       ? entry.getValue(titlePropId as any)?.toString() ?? file.basename
       : file.basename;
     const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
+    if (this.cfg(CFG_WRAP_TITLE, false)) titleEl.addClass("is-wrap");
     titleEl.textContent = title;
 
     // Visible property chips
+    const wrapValues = this.cfg(CFG_WRAP_VALUES, false);
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
       if (val == null || val instanceof NullValue) continue;
       const chip = cardEl.createSpan({ cls: "columns-card-chip" });
+      if (wrapValues) chip.addClass("is-wrap");
       const parsed = parsePropertyId(propId);
       const label = parsed?.name ?? propId;
       const labelEl = chip.createSpan({ cls: "columns-card-chip-label" });

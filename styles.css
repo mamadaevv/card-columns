@@ -180,6 +180,12 @@
   white-space: nowrap;
 }
 
+.columns-card-title.is-wrap {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
+}
+
 .columns-card-chip {
   font-size: 11px;
   color: var(--text-muted);
@@ -187,6 +193,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.columns-card-chip.is-wrap {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
 }
 
 .columns-card-chip-label {
