@@ -33,6 +33,7 @@ const CFG_WRAP_VALUES = "wrapValues";
 const CFG_DATE_FORMAT = "dateFormat";
 const CFG_DATE_FORMAT_D = "dateFormatDate";
 const CFG_DATE_FORMAT_DT = "dateFormatDatetime";
+const CFG_DATE_LOCALE = "dateLocale";
 const CFG_BOLD_TITLE = "boldTitle";
 
 // ---------------------------------------------------------------------------
@@ -145,6 +146,12 @@ class ColumnsView extends BasesView {
         type: "text",
         displayName: "Date & time format",
         placeholder: "Relative — e.g. DD-MM-YYYY HH:mm",
+      },
+      {
+        key: CFG_DATE_LOCALE,
+        type: "text",
+        displayName: "Locale",
+        placeholder: "en (default)",
       },
       {
         key: CFG_COL_WIDTH,
@@ -504,12 +511,12 @@ class ColumnsView extends BasesView {
     if (val instanceof DateValue) {
       const fmtD: string = this.cfg(CFG_DATE_FORMAT_D, "");
       const fmtDT: string = this.cfg(CFG_DATE_FORMAT_DT, "");
+      const locale: string = this.cfg(CFG_DATE_LOCALE, "");
       const raw = val.toString();
       const hasTime = raw.includes(":") || raw.includes("T");
       const fmt: string = hasTime && fmtDT ? fmtDT : !hasTime && fmtD ? fmtD : "";
-      const text = fmt
-        ? moment(raw).format(fmt)
-        : val.relative();
+      const m = locale ? moment(raw).locale(locale) : moment(raw);
+      const text = fmt ? m.format(fmt) : val.relative();
       const textEl = chip.createSpan({ cls: "columns-chip-text" });
       textEl.textContent = text;
       return;

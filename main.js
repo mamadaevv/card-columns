@@ -31,6 +31,7 @@ var CFG_WRAP_TITLE = "wrapTitle";
 var CFG_WRAP_VALUES = "wrapValues";
 var CFG_DATE_FORMAT_D = "dateFormatDate";
 var CFG_DATE_FORMAT_DT = "dateFormatDatetime";
+var CFG_DATE_LOCALE = "dateLocale";
 var CFG_BOLD_TITLE = "boldTitle";
 var ColumnsPlugin = class extends import_obsidian.Plugin {
   async onload() {
@@ -117,6 +118,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
         type: "text",
         displayName: "Date & time format",
         placeholder: "Relative \u2014 e.g. DD-MM-YYYY HH:mm"
+      },
+      {
+        key: CFG_DATE_LOCALE,
+        type: "text",
+        displayName: "Locale",
+        placeholder: "en (default)"
       },
       {
         key: CFG_COL_WIDTH,
@@ -400,10 +407,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (val instanceof import_obsidian.DateValue) {
       const fmtD = this.cfg(CFG_DATE_FORMAT_D, "");
       const fmtDT = this.cfg(CFG_DATE_FORMAT_DT, "");
+      const locale = this.cfg(CFG_DATE_LOCALE, "");
       const raw = val.toString();
       const hasTime = raw.includes(":") || raw.includes("T");
       const fmt = hasTime && fmtDT ? fmtDT : !hasTime && fmtD ? fmtD : "";
-      const text2 = fmt ? (0, import_obsidian.moment)(raw).format(fmt) : val.relative();
+      const m = locale ? (0, import_obsidian.moment)(raw).locale(locale) : (0, import_obsidian.moment)(raw);
+      const text2 = fmt ? m.format(fmt) : val.relative();
       const textEl = chip.createSpan({ cls: "columns-chip-text" });
       textEl.textContent = text2;
       return;
