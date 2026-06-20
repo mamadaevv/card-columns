@@ -278,6 +278,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       );
     };
     this.renderFilterBar(columnMap);
+    this.renderSettingsBar();
     let colNames = Array.from(columnMap.keys()).sort();
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
@@ -360,6 +361,28 @@ var ColumnsView = class extends import_obsidian.BasesView {
         this.render();
       });
     }
+  }
+  /** Render inline settings bar (grid, wrap, bold toggles). */
+  renderSettingsBar() {
+    const barEl = this.containerEl.createDiv({ cls: "columns-settings-bar" });
+    const gridBtn = barEl.createSpan({ cls: "columns-mode-btn" });
+    gridBtn.textContent = this.cfg(CFG_CHIP_GRID, false) ? "Grid" : "Stack";
+    gridBtn.addEventListener("click", () => {
+      this.config?.set(CFG_CHIP_GRID, !this.cfg(CFG_CHIP_GRID, false));
+      this.render();
+    });
+    const wrapBtn = barEl.createSpan({ cls: "columns-mode-btn" });
+    wrapBtn.textContent = this.cfg(CFG_WRAP_VALUES, false) ? "Wrap" : "Clip";
+    wrapBtn.addEventListener("click", () => {
+      this.config?.set(CFG_WRAP_VALUES, !this.cfg(CFG_WRAP_VALUES, false));
+      this.render();
+    });
+    const boldBtn = barEl.createSpan({ cls: "columns-mode-btn" });
+    boldBtn.textContent = this.cfg(CFG_BOLD_TITLE, true) ? "Bold" : "Normal";
+    boldBtn.addEventListener("click", () => {
+      this.config?.set(CFG_BOLD_TITLE, !this.cfg(CFG_BOLD_TITLE, true));
+      this.render();
+    });
   }
   // -----------------------------------------------------------------------
   //  Column & Card

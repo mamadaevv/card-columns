@@ -41,6 +41,15 @@
   background: var(--background-modifier-active);
 }
 
+.columns-settings-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
 .columns-filter-pill {
   display: inline-flex;
   align-items: center;
