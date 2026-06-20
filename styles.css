@@ -163,6 +163,7 @@
   gap: 0;
   word-break: break-word;
   overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .columns-card:hover {
@@ -227,6 +228,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px 12px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .columns-chips-grid .columns-card-chip {
@@ -237,7 +241,6 @@
 
 .columns-chips-grid .columns-card-chip-label {
   display: inline;
-  font-size: 10px;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -246,15 +249,10 @@
 .columns-chips-grid .columns-chip-boolean,
 .columns-chips-grid .columns-chip-link {
   display: inline;
-  font-size: 11px;
 }
 
 .columns-chips-grid .columns-chip-tag-row {
   display: inline-flex;
-}
-
-.columns-chips-grid .columns-chip-tag {
-  font-size: 10px;
 }
 
 .columns-card-chip-label {

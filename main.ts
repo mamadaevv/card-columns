@@ -36,6 +36,7 @@ const CFG_DATE_FORMAT_DT = "dateFormatDatetime";
 const CFG_DATE_LOCALE = "dateLocale";
 const CFG_BOLD_TITLE = "boldTitle";
 const CFG_CHIP_GRID = "chipGrid";
+const CFG_CHIP_FONT_SIZE = "chipFontSize";
 
 // ---------------------------------------------------------------------------
 //  Plugin
@@ -141,6 +142,15 @@ class ColumnsView extends BasesView {
         type: "toggle",
         displayName: "Chip grid layout",
         default: false,
+      },
+      {
+        key: CFG_CHIP_FONT_SIZE,
+        type: "slider",
+        displayName: "Chip font size (px)",
+        default: 12,
+        min: 9,
+        max: 16,
+        step: 1,
       },
       {
         key: CFG_DATE_FORMAT_D,
@@ -477,7 +487,9 @@ class ColumnsView extends BasesView {
     // Visible property chips
     const wrapValues = this.cfg(CFG_WRAP_VALUES, false);
     const chipGrid = this.cfg(CFG_CHIP_GRID, false);
+    const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
     const chipsEl = cardEl.createDiv({ cls: chipGrid ? "columns-chips-grid" : "columns-chips" });
+    chipsEl.style.fontSize = chipFontSize + "px";
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
       if (val == null || val instanceof NullValue) continue;

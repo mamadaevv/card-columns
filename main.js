@@ -34,6 +34,7 @@ var CFG_DATE_FORMAT_DT = "dateFormatDatetime";
 var CFG_DATE_LOCALE = "dateLocale";
 var CFG_BOLD_TITLE = "boldTitle";
 var CFG_CHIP_GRID = "chipGrid";
+var CFG_CHIP_FONT_SIZE = "chipFontSize";
 var ColumnsPlugin = class extends import_obsidian.Plugin {
   async onload() {
     this.registerBasesView("columns", {
@@ -113,6 +114,15 @@ var ColumnsView = class extends import_obsidian.BasesView {
         type: "toggle",
         displayName: "Chip grid layout",
         default: false
+      },
+      {
+        key: CFG_CHIP_FONT_SIZE,
+        type: "slider",
+        displayName: "Chip font size (px)",
+        default: 12,
+        min: 9,
+        max: 16,
+        step: 1
       },
       {
         key: CFG_DATE_FORMAT_D,
@@ -379,7 +389,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
     titleEl.textContent = title;
     const wrapValues = this.cfg(CFG_WRAP_VALUES, false);
     const chipGrid = this.cfg(CFG_CHIP_GRID, false);
+    const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
     const chipsEl = cardEl.createDiv({ cls: chipGrid ? "columns-chips-grid" : "columns-chips" });
+    chipsEl.style.fontSize = chipFontSize + "px";
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
       if (val == null || val instanceof import_obsidian.NullValue) continue;
