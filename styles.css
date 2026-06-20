@@ -222,13 +222,18 @@
 .columns-chips.is-wrap .columns-chip-text,
 .columns-chips.is-wrap .columns-chip-boolean,
 .columns-chips.is-wrap .columns-chip-link,
-.columns-chips.is-wrap .columns-chip-tag,
+.columns-chips.is-wrap .columns-chip-tag {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .columns-chips-grid.is-wrap .columns-chip-text,
 .columns-chips-grid.is-wrap .columns-chip-boolean,
 .columns-chips-grid.is-wrap .columns-chip-link,
 .columns-chips-grid.is-wrap .columns-chip-tag {
   overflow-wrap: anywhere;
   word-break: break-word;
+  width: 100%;
 }
 
 .columns-chips-grid {
