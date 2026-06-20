@@ -90,16 +90,16 @@ var ColumnsView = class extends import_obsidian.BasesView {
         placeholder: "File name"
       },
       {
-        key: CFG_WRAP_TITLE,
-        type: "toggle",
-        displayName: "Wrap card titles",
-        default: false
-      },
-      {
         key: CFG_BOLD_TITLE,
         type: "toggle",
         displayName: "Bold card titles",
         default: true
+      },
+      {
+        key: CFG_WRAP_TITLE,
+        type: "toggle",
+        displayName: "Wrap card titles",
+        default: false
       },
       {
         key: CFG_WRAP_VALUES,
