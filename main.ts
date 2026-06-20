@@ -415,13 +415,13 @@ class ColumnsView extends BasesView {
     // Resize: invisible draggable zone at bottom
     let startY = 0, startH = 0;
     const onMove = (e: MouseEvent) => {
-      const h = Math.max(60, startH + (e.clientY - startY));
+      const h = Math.max(80, startH + (e.clientY - startY));
       barEl.style.maxHeight = h + "px";
     };
     const onUp = (e: MouseEvent) => {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      const h = Math.max(60, startH + (e.clientY - startY));
+      const h = Math.max(80, startH + (e.clientY - startY));
       this.config?.set(CFG_FILTER_HEIGHT, h);
     };
     barEl.addEventListener("mousedown", (e) => {

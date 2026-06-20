@@ -348,13 +348,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
     barEl.style.maxHeight = savedH + "px";
     let startY = 0, startH = 0;
     const onMove = (e) => {
-      const h = Math.max(60, startH + (e.clientY - startY));
+      const h = Math.max(80, startH + (e.clientY - startY));
       barEl.style.maxHeight = h + "px";
     };
     const onUp = (e) => {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      const h = Math.max(60, startH + (e.clientY - startY));
+      const h = Math.max(80, startH + (e.clientY - startY));
       this.config?.set(CFG_FILTER_HEIGHT, h);
     };
     barEl.addEventListener("mousedown", (e) => {
