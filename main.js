@@ -370,7 +370,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const chip = cardEl.createDiv({ cls: "columns-card-chip" });
       if (wrapValues) chip.addClass("is-wrap");
       const parsed = (0, import_obsidian.parsePropertyId)(propId);
-      const label = parsed?.name ?? propId;
+      const label = this.config?.getDisplayName(propId) ?? parsed?.name ?? propId;
       const labelEl = chip.createDiv({ cls: "columns-card-chip-label" });
       labelEl.textContent = label;
       this.renderChipValue(chip, val, file);
