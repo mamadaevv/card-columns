@@ -115,7 +115,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
             key: CFG_WRAP_TITLE,
             type: "toggle",
             displayName: "Wrap card titles",
-            default: false
+            default: true
           },
           {
             key: CFG_BOLD_TITLE,
@@ -152,7 +152,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
             key: CFG_WRAP_VALUES,
             type: "toggle",
             displayName: "Wrap multi-line values",
-            default: false
+            default: true
           },
           {
             key: CFG_CHIP_FONT_SIZE,
@@ -160,7 +160,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
             displayName: "Chip font size (px)",
             default: 12,
             min: 9,
-            max: 12,
+            max: 18,
             step: 1
           },
           {
@@ -417,7 +417,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.basename : file.name;
     const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
     if (!this.cfg(CFG_BOLD_TITLE, true)) titleEl.addClass("is-normal-weight");
-    if (this.cfg(CFG_WRAP_TITLE, false)) titleEl.addClass("is-wrap");
+    if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
     const chipGrid = this.cfg(CFG_CHIP_GRID, "stack");
