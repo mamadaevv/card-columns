@@ -218,7 +218,7 @@
 .columns-card-chip-label {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-faint);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
