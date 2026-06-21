@@ -536,7 +536,30 @@ class ColumnsView extends BasesView {
           dash.textContent = "–";
         }
       } else {
-        this.renderChipValue(chip, val, file, isTagProp);
+        // file.backlinks, file.embeds, file.outlinks — each link on its own line
+        if (parsed?.name === "backlinks" || parsed?.name === "embeds" || parsed?.name === "outlinks") {
+          if (val instanceof ListValue) {
+            const len = val.length();
+            for (let i = 0; i < len; i++) {
+              const item = val.get(i);
+              if (!item || item instanceof NullValue || !item.isTruthy()) continue;
+              const raw = item.toString();
+              const m = raw.match(/^\[\[([^|\]]+)(?:\|([^\]]+))?\]\]$/);
+              const target = m ? m[1] : raw;
+              const linkEl = chip.createEl("a", { cls: "columns-chip-link" });
+              linkEl.textContent = m
+                ? m[2] || target.split("/").pop()?.replace(/\.md$/, "") || raw
+                : raw;
+              linkEl.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const resolved = this.app.metadataCache.getFirstLinkpathDest(target, file.path);
+                if (resolved && resolved instanceof TFile) this.openFile(resolved);
+              });
+            }
+          }
+        } else {
+          this.renderChipValue(chip, val, file, isTagProp);
+        }
       }
     }
 

@@ -439,7 +439,27 @@ var ColumnsView = class extends import_obsidian.BasesView {
           dash.textContent = "\u2013";
         }
       } else {
-        this.renderChipValue(chip, val, file, isTagProp);
+        if (parsed?.name === "backlinks" || parsed?.name === "embeds" || parsed?.name === "outlinks") {
+          if (val instanceof import_obsidian.ListValue) {
+            const len = val.length();
+            for (let i = 0; i < len; i++) {
+              const item = val.get(i);
+              if (!item || item instanceof import_obsidian.NullValue || !item.isTruthy()) continue;
+              const raw = item.toString();
+              const m = raw.match(/^\[\[([^|\]]+)(?:\|([^\]]+))?\]\]$/);
+              const target = m ? m[1] : raw;
+              const linkEl = chip.createEl("a", { cls: "columns-chip-link" });
+              linkEl.textContent = m ? m[2] || target.split("/").pop()?.replace(/\.md$/, "") || raw : raw;
+              linkEl.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const resolved = this.app.metadataCache.getFirstLinkpathDest(target, file.path);
+                if (resolved && resolved instanceof import_obsidian.TFile) this.openFile(resolved);
+              });
+            }
+          }
+        } else {
+          this.renderChipValue(chip, val, file, isTagProp);
+        }
       }
     }
     cardEl.addEventListener("click", (e) => {
