@@ -157,7 +157,7 @@ class ColumnsView extends BasesView {
       },
       {
         type: "group",
-        displayName: "Chips",
+        displayName: "Properties",
         items: [
           {
             key: CFG_CHIP_GRID,

@@ -130,7 +130,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       },
       {
         type: "group",
-        displayName: "Chips",
+        displayName: "Properties",
         items: [
           {
             key: CFG_CHIP_GRID,

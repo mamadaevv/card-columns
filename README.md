@@ -6,9 +6,9 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 
 - **Column grouping** — group by `tags`, `status`, `category` or any frontmatter property
 - **Tag filtering** — click tags to AND/OR filter across columns
-- **Card chips** — view note properties as styled chips (text, tags, links, booleans, dates)
+- **Property chips** — view note properties as styled chips (text, tags, links, booleans, dates)
 - **Date formatting** — Moment.js format and locale support
-- **Grid/Stack layout** — compact inline chips or structured vertical layout
+- **Grid/Stack layout** — compact inline properties or structured vertical layout
 - **Native integration** — uses Obsidian BasesView framework (Sort, Filter, Properties, Search toolbar)
 
 ## Usage
@@ -25,12 +25,11 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 - Column width (px)
 
 ### Title
-- Card title property
 - Wrap card titles
 - Bold card titles
 - Title font size
 
-### Chips
+### Properties
 - Chip layout (Stack / Grid)
 - Wrap multi-line values
 - Chip font size
