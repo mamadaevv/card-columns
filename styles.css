@@ -253,10 +253,10 @@
 }
 
 .columns-card-chip-label {
-  font-weight: 600;
+  font-weight: 400;
   color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  text-transform: none;
+  letter-spacing: 0;
   font-size: calc(var(--chip-fs) - 2px);
 }
 

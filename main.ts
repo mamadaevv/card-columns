@@ -25,7 +25,6 @@ import {
 //  Config keys
 // ---------------------------------------------------------------------------
 
-const CFG_TITLE_PROP = "titleProperty";
 const CFG_COL_WIDTH = "columnWidth";
 const CFG_OPEN_BEHAVIOR = "openBehavior";
 const CFG_WRAP_TITLE = "wrapTitle";
@@ -134,12 +133,6 @@ class ColumnsView extends BasesView {
         displayName: "Title",
         items: [
           {
-            displayName: "Card title property",
-            type: "property",
-            key: CFG_TITLE_PROP,
-            placeholder: "File name",
-          },
-          {
             key: CFG_WRAP_TITLE,
             type: "toggle",
             displayName: "Wrap card titles",
@@ -223,20 +216,6 @@ class ColumnsView extends BasesView {
     return (v as T) ?? fallback;
   }
 
-  private propKey(key: string): string | null {
-    const raw = this.config?.get(key);
-    if (typeof raw === "string") {
-      const parsed = parsePropertyId(raw as any);
-      return parsed?.name ?? raw;
-    }
-    const id = this.config?.getAsPropertyId(key);
-    if (id) {
-      const parsed = parsePropertyId(id);
-      return parsed?.name ?? null;
-    }
-    return null;
-  }
-
   private getColumnProperty(): string | null {
     const cfg = this.config as any;
     const raw: string | undefined = cfg?.groupBy?.property;
@@ -250,21 +229,17 @@ class ColumnsView extends BasesView {
     return "tags";
   }
 
-  private getTitleProperty(): string | null {
-    const fromProp = this.propKey(CFG_TITLE_PROP);
-    return fromProp ?? null;
-  }
-
+  /** First visible property = card title (like native Cards view). */
   private getTitlePropertyId(): string | null {
-    const raw = this.config?.get(CFG_TITLE_PROP);
-    if (typeof raw === "string") return raw;
-    const id = this.config?.getAsPropertyId(CFG_TITLE_PROP);
-    return id ?? null;
+    const order = this.config?.getOrder();
+    if (!order || order.length === 0) return null;
+    const parsed = parsePropertyId(order[0]);
+    return parsed ? order[0] : null;
   }
 
   private getColumnWidth(): number {
     const v = this.cfg<number>(CFG_COL_WIDTH, 300);
-    return v >= 150 && v <= 500 ? v : 300;
+    return v >= 150 && v <= 700 ? v : 300;
   }
 
   private getOpenBehavior(): string {
@@ -285,13 +260,11 @@ class ColumnsView extends BasesView {
   /** Get visible properties from the Properties button. */
   private getVisiblePropertyIds(): string[] {
     const props = this.config?.getOrder() ?? [];
-    const titlePropName = this.getTitleProperty();
     const titlePropId = this.getTitlePropertyId();
     return props.filter((id) => {
       const parsed = parsePropertyId(id);
       if (!parsed) return false;
-      // Skip if this property is used as the card title
-      if (titlePropName && parsed.name === titlePropName) return false;
+      // Skip first property — it's used as the card title
       if (titlePropId && id === titlePropId) return false;
       return true;
     });
@@ -530,7 +503,7 @@ class ColumnsView extends BasesView {
     // Title
     const titlePropId = this.getTitlePropertyId();
     const title = titlePropId
-      ? entry.getValue(titlePropId as any)?.toString() ?? file.basename
+      ? entry.getValue(titlePropId as any)?.toString() ?? file.name
       : file.name;
     const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
     if (!this.cfg(CFG_BOLD_TITLE, true)) titleEl.addClass("is-normal-weight");

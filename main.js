@@ -24,7 +24,6 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var CFG_TITLE_PROP = "titleProperty";
 var CFG_COL_WIDTH = "columnWidth";
 var CFG_OPEN_BEHAVIOR = "openBehavior";
 var CFG_WRAP_TITLE = "wrapTitle";
@@ -107,12 +106,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
         displayName: "Title",
         items: [
           {
-            displayName: "Card title property",
-            type: "property",
-            key: CFG_TITLE_PROP,
-            placeholder: "File name"
-          },
-          {
             key: CFG_WRAP_TITLE,
             type: "toggle",
             displayName: "Wrap card titles",
@@ -193,19 +186,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const v = this.config?.get(key);
     return v ?? fallback;
   }
-  propKey(key) {
-    const raw = this.config?.get(key);
-    if (typeof raw === "string") {
-      const parsed = (0, import_obsidian.parsePropertyId)(raw);
-      return parsed?.name ?? raw;
-    }
-    const id = this.config?.getAsPropertyId(key);
-    if (id) {
-      const parsed = (0, import_obsidian.parsePropertyId)(id);
-      return parsed?.name ?? null;
-    }
-    return null;
-  }
   getColumnProperty() {
     const cfg = this.config;
     const raw = cfg?.groupBy?.property;
@@ -216,19 +196,16 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (cfg?.groupBy !== void 0) return null;
     return "tags";
   }
-  getTitleProperty() {
-    const fromProp = this.propKey(CFG_TITLE_PROP);
-    return fromProp ?? null;
-  }
+  /** First visible property = card title (like native Cards view). */
   getTitlePropertyId() {
-    const raw = this.config?.get(CFG_TITLE_PROP);
-    if (typeof raw === "string") return raw;
-    const id = this.config?.getAsPropertyId(CFG_TITLE_PROP);
-    return id ?? null;
+    const order = this.config?.getOrder();
+    if (!order || order.length === 0) return null;
+    const parsed = (0, import_obsidian.parsePropertyId)(order[0]);
+    return parsed ? order[0] : null;
   }
   getColumnWidth() {
     const v = this.cfg(CFG_COL_WIDTH, 300);
-    return v >= 150 && v <= 500 ? v : 300;
+    return v >= 150 && v <= 700 ? v : 300;
   }
   getOpenBehavior() {
     const v = this.cfg(CFG_OPEN_BEHAVIOR, "tab");
@@ -246,12 +223,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
   /** Get visible properties from the Properties button. */
   getVisiblePropertyIds() {
     const props = this.config?.getOrder() ?? [];
-    const titlePropName = this.getTitleProperty();
     const titlePropId = this.getTitlePropertyId();
     return props.filter((id) => {
       const parsed = (0, import_obsidian.parsePropertyId)(id);
       if (!parsed) return false;
-      if (titlePropName && parsed.name === titlePropName) return false;
       if (titlePropId && id === titlePropId) return false;
       return true;
     });
@@ -435,7 +410,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (!(file instanceof import_obsidian.TFile)) return;
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
     const titlePropId = this.getTitlePropertyId();
-    const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.basename : file.name;
+    const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.name : file.name;
     const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
     if (!this.cfg(CFG_BOLD_TITLE, true)) titleEl.addClass("is-normal-weight");
     if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
