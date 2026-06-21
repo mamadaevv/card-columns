@@ -76,7 +76,7 @@ To publish, you'll need:
 
 If you find this plugin useful, consider supporting its development:
 
-<!-- INSERT: crypto wallet address here -->
+**https://donation.streamiverse.io/mamadaevv**
 
 ## License
 

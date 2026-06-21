@@ -5,7 +5,7 @@
   "minAppVersion": "1.8.0",
   "description": "Kanban-style card view with column grouping, tag filters, and property chips. Group notes by tags or any frontmatter property.",
   "author": "User",
-  "authorUrl": "",
-  "fundingUrl": "",
+  "authorUrl": "https://github.com/mamadaevv",
+  "fundingUrl": "https://donation.streamiverse.io/mamadaevv",
   "isDesktopOnly": false
 }
