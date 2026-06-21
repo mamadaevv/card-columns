@@ -520,14 +520,18 @@ class ColumnsView extends BasesView {
     if (!wrapValues) chipsEl.addClass("is-clip");
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
-      if (val == null || val instanceof NullValue) continue;
       const chip = chipsEl.createDiv({ cls: "columns-card-chip" });
       const parsed = parsePropertyId(propId);
       const label = this.config?.getDisplayName(propId) ?? parsed?.name ?? propId;
       const isTagProp = parsed?.name === "tags";
       const labelEl = chip.createDiv({ cls: "columns-card-chip-label" });
       labelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
-      this.renderChipValue(chip, val, file, isTagProp);
+      if (val == null || val instanceof NullValue) {
+        const dash = chip.createSpan({ cls: "columns-chip-text" });
+        dash.textContent = "–";
+      } else {
+        this.renderChipValue(chip, val, file, isTagProp);
+      }
     }
 
     // Click events...

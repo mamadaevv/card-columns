@@ -424,14 +424,18 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (!wrapValues) chipsEl.addClass("is-clip");
     for (const propId of visibleProps) {
       const val = entry.getValue(propId);
-      if (val == null || val instanceof import_obsidian.NullValue) continue;
       const chip = chipsEl.createDiv({ cls: "columns-card-chip" });
       const parsed = (0, import_obsidian.parsePropertyId)(propId);
       const label = this.config?.getDisplayName(propId) ?? parsed?.name ?? propId;
       const isTagProp = parsed?.name === "tags";
       const labelEl = chip.createDiv({ cls: "columns-card-chip-label" });
       labelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
-      this.renderChipValue(chip, val, file, isTagProp);
+      if (val == null || val instanceof import_obsidian.NullValue) {
+        const dash = chip.createSpan({ cls: "columns-chip-text" });
+        dash.textContent = "\u2013";
+      } else {
+        this.renderChipValue(chip, val, file, isTagProp);
+      }
     }
     cardEl.addEventListener("click", (e) => {
       if (e.ctrlKey || e.metaKey) {
