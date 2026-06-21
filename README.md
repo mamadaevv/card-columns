@@ -30,10 +30,16 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 
 ## Usage
 
-1. Create a new .base file (or open an existing database)
+1. Create a new `.base` file (or open an existing database)
 2. Click the view switcher and select **Columns**
-3. Use **Group by** in the toolbar to pick a property for column grouping
-4. Click tag pills to filter, gear menu to configure
+3. Click **Group by** in the toolbar → choose a property (e.g. `tags`, `status`) → notes are grouped into columns
+4. Filter by clicking tag pills below the toolbar:
+   - **Left-click** on a tag → show only notes with that tag
+   - **Left-click multiple tags** → show notes matching ANY of the selected tags (OR mode)
+   - **Right-click** a tag → toggle AND mode: now multiple tags require ALL to match
+   - Click the **OR/AND** button to switch mode
+   - Click **All** → clear all filters
+5. Open the **gear menu** (⚙) to configure appearance: title style, property chips, date format, layout
 
 ## Settings (gear menu)
 
