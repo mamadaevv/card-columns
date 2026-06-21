@@ -6,15 +6,15 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 
 <!-- Video 1: Overview -->
 **1. Overview**
-<!-- INSERT: screen recording showing the full view, columns, cards, tags, gear menu -->
+![Overview](https://raw.githubusercontent.com/mamadaevv/obsidian-columns/main/overview.png)
 
 <!-- Video 2: Setup & Configuration -->
 **2. Creating and configuring a view**
-<!-- INSERT: screen recording showing how to create a .base file, switch to Columns view, pick Group by property, open gear menu, configure Title/Properties settings -->
+[![View configure cover](https://raw.githubusercontent.com/mamadaevv/obsidian-columns/main/view%20configure.webp)](https://raw.githubusercontent.com/mamadaevv/obsidian-columns/main/view%20configure.webm)
 
 <!-- Video 3: Filtering -->
 **3. Tag filtering & column navigation**
-<!-- INSERT: screen recording showing clicking tag pills, toggling AND/OR mode, combining filters, navigating cards -->
+[![Filter use cover](https://raw.githubusercontent.com/mamadaevv/obsidian-columns/main/filter%20use.webp)](https://raw.githubusercontent.com/mamadaevv/obsidian-columns/main/filter%20use.webm)
 
 ## Features
 
