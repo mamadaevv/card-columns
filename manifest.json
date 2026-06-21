@@ -1,9 +1,9 @@
 {
-  "id": "obsidian-columns",
-  "name": "Columns",
+  "id": "card-columns",
+  "name": "Card Columns",
   "version": "0.2.0",
   "minAppVersion": "1.8.0",
-  "description": "Kanban-style card view with column grouping, tag filters, and property chips. Group notes by tags or any frontmatter property.",
+  "description": "Kanban-style card view with column grouping, tag filtering, and property chips. Group notes by tags or any frontmatter property.",
   "author": "Nik M",
   "authorUrl": "https://github.com/mamadaevv",
   "fundingUrl": "https://donation.streamiverse.io/mamadaevv",
