@@ -510,6 +510,7 @@ class ColumnsView extends BasesView {
     if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
+    if (visibleProps.length > 0) titleEl.style.marginBottom = "16px";
 
     // Visible property chips
     if (visibleProps.length > 0) {

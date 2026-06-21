@@ -187,7 +187,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-bottom: 16px;
 }
 
 .columns-card-title.is-normal-weight {
