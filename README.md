@@ -2,6 +2,20 @@
 
 A kanban-style card view for Obsidian. Group notes by tags or any frontmatter property into columns, with tag filtering and property chips.
 
+## Demo
+
+<!-- Video 1: Overview -->
+**1. Overview**
+<!-- INSERT: screen recording showing the full view, columns, cards, tags, gear menu -->
+
+<!-- Video 2: Setup & Configuration -->
+**2. Creating and configuring a view**
+<!-- INSERT: screen recording showing how to create a .base file, switch to Columns view, pick Group by property, open gear menu, configure Title/Properties settings -->
+
+<!-- Video 3: Filtering -->
+**3. Tag filtering & column navigation**
+<!-- INSERT: screen recording showing clicking tag pills, toggling AND/OR mode, combining filters, navigating cards -->
+
 ## Features
 
 - **Column grouping** — group by `tags`, `status`, `category` or any frontmatter property
@@ -27,12 +41,12 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 ### Title
 - Wrap card titles
 - Bold card titles
-- Title font size
+- Font size (px)
 
 ### Properties
-- Chip layout (Stack / Grid)
+- Layout (Stack / Grid)
 - Wrap multi-line values
-- Chip font size
+- Font size (px)
 - Date format
 - Date & time format
 - Locale
@@ -48,6 +62,21 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 npm install
 npm run build
 ```
+
+## Publishing to Community Plugins
+
+To publish, you'll need:
+
+1. A **public GitHub repository** named `obsidian-columns`
+2. The repo must contain: `main.js`, `manifest.json`, `styles.css`, `LICENSE`, `README.md`
+3. A **git tag** matching the version in `manifest.json` (e.g. `0.2.0`)
+4. Create a PR to [obsidianmd/obsidian-releases](https://github.com/obsidianmd/obsidian-releases) adding an entry to `community-plugins.json`
+
+## Support
+
+If you find this plugin useful, consider supporting its development:
+
+<!-- INSERT: crypto wallet address here -->
 
 ## License
 
