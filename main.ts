@@ -512,6 +512,7 @@ class ColumnsView extends BasesView {
     titleEl.textContent = title;
 
     // Visible property chips
+    if (visibleProps.length > 0) {
     const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
     const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
     const wrapValues = this.cfg(CFG_WRAP_VALUES, true);
@@ -556,6 +557,7 @@ class ColumnsView extends BasesView {
         }
       }
     }
+  }
 
     // Click events...
 

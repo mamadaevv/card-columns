@@ -416,44 +416,46 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
-    const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
-    const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
-    const wrapValues = this.cfg(CFG_WRAP_VALUES, true);
-    const chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
-    chipsEl.style.setProperty("--chip-fs", chipFontSize + "px");
-    if (!wrapValues) chipsEl.addClass("is-clip");
-    for (const propId of visibleProps) {
-      const val = entry.getValue(propId);
-      const chip = chipsEl.createDiv({ cls: "columns-card-chip" });
-      const parsed = (0, import_obsidian.parsePropertyId)(propId);
-      const label = this.config?.getDisplayName(propId) ?? parsed?.name ?? propId;
-      const isTagProp = parsed?.name === "tags";
-      const labelEl = chip.createDiv({ cls: "columns-card-chip-label" });
-      labelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
-      if (val == null || val instanceof import_obsidian.NullValue) {
-        const dash = chip.createSpan({ cls: "columns-chip-text" });
-        dash.textContent = "\u2013";
-      } else {
-        if (parsed?.name === "backlinks" || parsed?.name === "embeds" || parsed?.name === "outlinks") {
-          if (val instanceof import_obsidian.ListValue) {
-            const len = val.length();
-            for (let i = 0; i < len; i++) {
-              const item = val.get(i);
-              if (!item || item instanceof import_obsidian.NullValue || !item.isTruthy()) continue;
-              const raw = item.toString();
-              const m = raw.match(/^\[\[([^|\]]+)(?:\|([^\]]+))?\]\]$/);
-              const target = m ? m[1] : raw;
-              const linkEl = chip.createEl("a", { cls: "columns-chip-link-block" });
-              linkEl.textContent = m ? m[2] || target.split("/").pop()?.replace(/\.md$/, "") || raw : raw;
-              linkEl.addEventListener("click", (e) => {
-                e.stopPropagation();
-                const resolved = this.app.metadataCache.getFirstLinkpathDest(target, file.path);
-                if (resolved && resolved instanceof import_obsidian.TFile) this.openFile(resolved);
-              });
-            }
-          }
+    if (visibleProps.length > 0) {
+      const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
+      const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
+      const wrapValues = this.cfg(CFG_WRAP_VALUES, true);
+      const chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
+      chipsEl.style.setProperty("--chip-fs", chipFontSize + "px");
+      if (!wrapValues) chipsEl.addClass("is-clip");
+      for (const propId of visibleProps) {
+        const val = entry.getValue(propId);
+        const chip = chipsEl.createDiv({ cls: "columns-card-chip" });
+        const parsed = (0, import_obsidian.parsePropertyId)(propId);
+        const label = this.config?.getDisplayName(propId) ?? parsed?.name ?? propId;
+        const isTagProp = parsed?.name === "tags";
+        const labelEl = chip.createDiv({ cls: "columns-card-chip-label" });
+        labelEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+        if (val == null || val instanceof import_obsidian.NullValue) {
+          const dash = chip.createSpan({ cls: "columns-chip-text" });
+          dash.textContent = "\u2013";
         } else {
-          this.renderChipValue(chip, val, file, isTagProp);
+          if (parsed?.name === "backlinks" || parsed?.name === "embeds" || parsed?.name === "outlinks") {
+            if (val instanceof import_obsidian.ListValue) {
+              const len = val.length();
+              for (let i = 0; i < len; i++) {
+                const item = val.get(i);
+                if (!item || item instanceof import_obsidian.NullValue || !item.isTruthy()) continue;
+                const raw = item.toString();
+                const m = raw.match(/^\[\[([^|\]]+)(?:\|([^\]]+))?\]\]$/);
+                const target = m ? m[1] : raw;
+                const linkEl = chip.createEl("a", { cls: "columns-chip-link-block" });
+                linkEl.textContent = m ? m[2] || target.split("/").pop()?.replace(/\.md$/, "") || raw : raw;
+                linkEl.addEventListener("click", (e) => {
+                  e.stopPropagation();
+                  const resolved = this.app.metadataCache.getFirstLinkpathDest(target, file.path);
+                  if (resolved && resolved instanceof import_obsidian.TFile) this.openFile(resolved);
+                });
+              }
+            }
+          } else {
+            this.renderChipValue(chip, val, file, isTagProp);
+          }
         }
       }
     }
