@@ -12,16 +12,16 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 <!-- Video 2: Setup & Configuration -->
 **2. Creating and configuring a view**
 
-![View configure - General](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20general.gif)
+[![View configure general](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20general.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20general.gif)
 
-![View configure - Title settings](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20title.gif)
+[![View configure title](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20title.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20title.gif)
 
-![View configure - Properties settings](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20properties.gif)
+[![View configure properties](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20properties.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20properties.gif)
 
 <!-- Video 3: Filtering -->
 **3. Tag filtering & column navigation**
 
-![Filter use](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/filter%20use.gif)
+[![Filter use](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/filter%20use.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/filter%20use.gif)
 
 ## Features
 
