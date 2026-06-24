@@ -36,6 +36,7 @@ var CFG_CHIP_FONT_SIZE = "chipFontSize";
 var CFG_TITLE_FONT_SIZE = "titleFontSize";
 var CFG_WRAP_VALUES = "wrapValues";
 var CFG_FILTER_HEIGHT = "filterHeight";
+var CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 var ColumnsPlugin = class extends import_obsidian.Plugin {
   async onload() {
     this.registerBasesView("columns", {
@@ -102,6 +103,15 @@ var ColumnsView = class extends import_obsidian.BasesView {
             min: 150,
             max: 700,
             step: 10
+          },
+          {
+            key: CFG_COLUMNS_PER_GROUP,
+            type: "slider",
+            displayName: "Columns per group",
+            default: 1,
+            min: 1,
+            max: 6,
+            step: 1
           }
         ]
       },
@@ -312,8 +322,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
           (e) => e.file?.path && filteredPaths.includes(e.file.path)
         );
       }
+      const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
       if (colEntries.length === 0) continue;
-      this.renderColumn(boardEl, colName, colEntries, colWidth, visibleProps);
+      this.renderColumn(boardEl, colName, colEntries, colWidth, visibleProps, columnsPerGroup);
     }
   }
   // -----------------------------------------------------------------------
@@ -396,15 +407,20 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   //  Column & Card
   // -----------------------------------------------------------------------
-  renderColumn(boardEl, name, entries, width, visibleProps) {
+  renderColumn(boardEl, name, entries, width, visibleProps, columnsPerGroup) {
+    const colWidth = width * columnsPerGroup;
     const colEl = boardEl.createDiv({ cls: "columns-column" });
-    colEl.style.flexBasis = width + "px";
+    colEl.style.flexBasis = colWidth + "px";
+    colEl.style.maxWidth = colWidth + "px";
     const headerEl = colEl.createDiv({ cls: "columns-column-header" });
     const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
     titleSpan.textContent = name;
     const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
     countSpan.textContent = String(entries.length);
     const cardsEl = colEl.createDiv({ cls: "columns-cards" });
+    if (columnsPerGroup > 1) {
+      cardsEl.style.columnCount = String(columnsPerGroup);
+    }
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps);
     }

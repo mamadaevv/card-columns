@@ -151,6 +151,17 @@
   min-height: 0;
 }
 
+/* Multi-column layout: cards flow into sub-columns */
+.columns-cards.is-multi-column {
+  display: block;
+  column-gap: 8px;
+}
+
+.columns-cards.is-multi-column > .columns-card {
+  break-inside: avoid;
+  margin-bottom: 12px;
+}
+
 /* ---------------------------------------------------------------------------
   Card
   --------------------------------------------------------------------------- */

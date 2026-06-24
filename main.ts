@@ -37,6 +37,7 @@ const CFG_CHIP_FONT_SIZE = "chipFontSize";
 const CFG_TITLE_FONT_SIZE = "titleFontSize";
 const CFG_WRAP_VALUES = "wrapValues";
 const CFG_FILTER_HEIGHT = "filterHeight";
+const CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 
 // ---------------------------------------------------------------------------
 //  Plugin
@@ -129,6 +130,15 @@ class ColumnsView extends BasesView {
             min: 150,
             max: 700,
             step: 10,
+          },
+          {
+            key: CFG_COLUMNS_PER_GROUP,
+            type: "slider",
+            displayName: "Columns per group",
+            default: 1,
+            min: 1,
+            max: 6,
+            step: 1,
           },
         ],
       },
@@ -371,9 +381,11 @@ class ColumnsView extends BasesView {
         );
       }
 
+      const columnsPerGroup = this.cfg<number>(CFG_COLUMNS_PER_GROUP, 1);
+
       if (colEntries.length === 0) continue;
 
-      this.renderColumn(boardEl, colName, colEntries, colWidth, visibleProps);
+      this.renderColumn(boardEl, colName, colEntries, colWidth, visibleProps, columnsPerGroup);
     }
   }
 
@@ -477,9 +489,12 @@ class ColumnsView extends BasesView {
     entries: BasesEntry[],
     width: number,
     visibleProps: string[],
+    columnsPerGroup: number,
   ): void {
+    const colWidth = width * columnsPerGroup;
     const colEl = boardEl.createDiv({ cls: "columns-column" });
-    colEl.style.flexBasis = width + "px";
+    colEl.style.flexBasis = colWidth + "px";
+    colEl.style.maxWidth = colWidth + "px";
 
     const headerEl = colEl.createDiv({ cls: "columns-column-header" });
     const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
@@ -488,6 +503,10 @@ class ColumnsView extends BasesView {
     countSpan.textContent = String(entries.length);
 
     const cardsEl = colEl.createDiv({ cls: "columns-cards" });
+    if (columnsPerGroup > 1) {
+      cardsEl.classList.add("is-multi-column");
+      cardsEl.style.columnCount = String(columnsPerGroup);
+    }
 
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps);
@@ -738,7 +757,7 @@ class ColumnsView extends BasesView {
     const isRight = direction === "split-right";
     const leafField = isRight ? "splitLeafRight" : "splitLeafDown";
     const splitLeaf = this[leafField] as WorkspaceLeaf | null;
-    const dir: SplitDirection = isRight ? "vertical" : "horizontal";
+    const dir = isRight ? "vertical" : "horizontal";
 
     // Check if existing split leaf is still alive
     let found = false;
