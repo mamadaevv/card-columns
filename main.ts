@@ -66,7 +66,8 @@ class ColumnsView extends BasesView {
 
   activeFilters: Set<string> = new Set();
   andMode = false;
-  splitLeaf: WorkspaceLeaf | null = null;
+  splitLeafRight: WorkspaceLeaf | null = null;
+  splitLeafDown: WorkspaceLeaf | null = null;
 
   constructor(
     controller: QueryController,
@@ -117,6 +118,7 @@ class ColumnsView extends BasesView {
               modal: "Floating modal",
               tab: "New tab",
               "split-right": "Split right",
+              "split-down": "Split down",
             },
           },
           {
@@ -246,7 +248,7 @@ class ColumnsView extends BasesView {
 
   private getOpenBehavior(): string {
     const v = this.cfg(CFG_OPEN_BEHAVIOR, "split-right");
-    return ["active", "modal", "tab", "split-right"].includes(v) ? v : "split-right";
+    return ["active", "modal", "tab", "split-right", "split-down"].includes(v) ? v : "split-right";
   }
 
   /** Collect column values from a file's frontmatter. */
@@ -568,12 +570,14 @@ class ColumnsView extends BasesView {
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+click — open in background
         const behavior = this.getOpenBehavior();
-        if (behavior === "split-right") {
+        if (behavior === "split-right" || behavior === "split-down") {
           // Check if split leaf is alive first
-          const leafAlive = this.splitLeaf?.view != null && this.splitLeaf.parent != null;
+          const leafField = behavior === "split-right" ? "splitLeafRight" : "splitLeafDown";
+          const splitLeaf = (this as any)[leafField] as WorkspaceLeaf | null;
+          const leafAlive = splitLeaf?.view != null;
           if (leafAlive) {
             // Open in a new tab inside the existing split leaf
-            this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: false });
+            this.app.workspace.setActiveLeaf(splitLeaf, { focus: false });
             const leaf = this.app.workspace.getLeaf(true);
             leaf.openFile(file);
           } else {
@@ -720,30 +724,38 @@ class ColumnsView extends BasesView {
         break;
       }
       case "split-right": {
-        this.openInSplit(file);
+        this.openInSplit(file, "split-right");
+        break;
+      }
+      case "split-down": {
+        this.openInSplit(file, "split-down");
         break;
       }
     }
   }
 
-  private openInSplit(file: TFile): void {
-    // Check if existing split leaf is still alive — must have a view AND be in the workspace
+  private openInSplit(file: TFile, direction: "split-right" | "split-down"): void {
+    const isRight = direction === "split-right";
+    const leafField = isRight ? "splitLeafRight" : "splitLeafDown";
+    const splitLeaf = this[leafField] as WorkspaceLeaf | null;
+    const dir: SplitDirection = isRight ? "vertical" : "horizontal";
+
+    // Check if existing split leaf is still alive
     let found = false;
-    if (this.splitLeaf?.view) {
+    if (splitLeaf?.view) {
       this.app.workspace.iterateAllLeaves((l) => {
-        if (l === this.splitLeaf) found = true;
+        if (l === splitLeaf) found = true;
       });
     }
 
     if (found) {
-      // Reuse existing split leaf
-      this.splitLeaf.openFile(file);
-      this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: true });
+      splitLeaf.openFile(file);
+      this.app.workspace.setActiveLeaf(splitLeaf, { focus: true });
     } else {
-      // Create new split leaf to the right
-      this.splitLeaf = this.app.workspace.getLeaf("split", "vertical");
-      this.splitLeaf.openFile(file);
-      this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: true });
+      const newLeaf = this.app.workspace.getLeaf("split", dir);
+      newLeaf.openFile(file);
+      this.app.workspace.setActiveLeaf(newLeaf, { focus: true });
+      (this as any)[leafField] = newLeaf;
     }
   }
 }

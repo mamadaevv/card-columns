@@ -52,7 +52,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.type = "columns";
     this.activeFilters = /* @__PURE__ */ new Set();
     this.andMode = false;
-    this.splitLeaf = null;
+    this.splitLeafRight = null;
+    this.splitLeafDown = null;
     this.scrollEl = scrollEl;
     this.plugin = plugin;
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
@@ -89,7 +90,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
               active: "Active pane",
               modal: "Floating modal",
               tab: "New tab",
-              "split-right": "Split right"
+              "split-right": "Split right",
+              "split-down": "Split down"
             }
           },
           {
@@ -211,7 +213,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   }
   getOpenBehavior() {
     const v = this.cfg(CFG_OPEN_BEHAVIOR, "split-right");
-    return ["active", "modal", "tab", "split-right"].includes(v) ? v : "split-right";
+    return ["active", "modal", "tab", "split-right", "split-down"].includes(v) ? v : "split-right";
   }
   /** Collect column values from a file's frontmatter. */
   getColumnValues(file, prop) {
@@ -465,10 +467,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     cardEl.addEventListener("click", (e) => {
       if (e.ctrlKey || e.metaKey) {
         const behavior = this.getOpenBehavior();
-        if (behavior === "split-right") {
-          const leafAlive = this.splitLeaf?.view != null && this.splitLeaf.parent != null;
+        if (behavior === "split-right" || behavior === "split-down") {
+          const leafField = behavior === "split-right" ? "splitLeafRight" : "splitLeafDown";
+          const splitLeaf = this[leafField];
+          const leafAlive = splitLeaf?.view != null;
           if (leafAlive) {
-            this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: false });
+            this.app.workspace.setActiveLeaf(splitLeaf, { focus: false });
             const leaf = this.app.workspace.getLeaf(true);
             leaf.openFile(file);
           } else {
@@ -591,25 +595,34 @@ var ColumnsView = class extends import_obsidian.BasesView {
         break;
       }
       case "split-right": {
-        this.openInSplit(file);
+        this.openInSplit(file, "split-right");
+        break;
+      }
+      case "split-down": {
+        this.openInSplit(file, "split-down");
         break;
       }
     }
   }
-  openInSplit(file) {
+  openInSplit(file, direction) {
+    const isRight = direction === "split-right";
+    const leafField = isRight ? "splitLeafRight" : "splitLeafDown";
+    const splitLeaf = this[leafField];
+    const dir = isRight ? "vertical" : "horizontal";
     let found = false;
-    if (this.splitLeaf?.view) {
+    if (splitLeaf?.view) {
       this.app.workspace.iterateAllLeaves((l) => {
-        if (l === this.splitLeaf) found = true;
+        if (l === splitLeaf) found = true;
       });
     }
     if (found) {
-      this.splitLeaf.openFile(file);
-      this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: true });
+      splitLeaf.openFile(file);
+      this.app.workspace.setActiveLeaf(splitLeaf, { focus: true });
     } else {
-      this.splitLeaf = this.app.workspace.getLeaf("split", "vertical");
-      this.splitLeaf.openFile(file);
-      this.app.workspace.setActiveLeaf(this.splitLeaf, { focus: true });
+      const newLeaf = this.app.workspace.getLeaf("split", dir);
+      newLeaf.openFile(file);
+      this.app.workspace.setActiveLeaf(newLeaf, { focus: true });
+      this[leafField] = newLeaf;
     }
   }
 };
