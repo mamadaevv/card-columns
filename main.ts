@@ -498,6 +498,7 @@ class ColumnsView extends BasesView {
     const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
     if (columnsPerGroup > 1) {
       colEl.classList.add("is-multi-column");
+      colEl.style.flexBasis = colWidth + "px";
       colEl.style.maxWidth = colWidth + "px";
     } else {
       colEl.style.flexBasis = colWidth + "px";
