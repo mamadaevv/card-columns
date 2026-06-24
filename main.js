@@ -24,7 +24,7 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var CFG_COL_WIDTH = "columnWidth";
+var CFG_CARD_WIDTH = "cardWidth";
 var CFG_OPEN_BEHAVIOR = "openBehavior";
 var CFG_WRAP_TITLE = "wrapTitle";
 var CFG_DATE_FORMAT_D = "dateFormatDate";
@@ -96,9 +96,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
             }
           },
           {
-            key: CFG_COL_WIDTH,
+            key: CFG_CARD_WIDTH,
             type: "slider",
-            displayName: "Column width (px)",
+            displayName: "Card width (px)",
             default: 300,
             min: 150,
             max: 700,
@@ -217,8 +217,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const parsed = (0, import_obsidian.parsePropertyId)(order[0]);
     return parsed ? order[0] : null;
   }
-  getColumnWidth() {
-    const v = this.cfg(CFG_COL_WIDTH, 300);
+  getCardWidth() {
+    const v = this.cfg(CFG_CARD_WIDTH, 300);
     return v >= 150 && v <= 700 ? v : 300;
   }
   getOpenBehavior() {
@@ -303,7 +303,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
     if (noValueEntries.length > 0) colNames.push("(No value)");
-    const colWidth = this.getColumnWidth();
+    const cardWidth = this.getCardWidth();
     const visibleProps = this.getVisiblePropertyIds();
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
     for (const colName of colNames) {
@@ -324,7 +324,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
       const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
       if (colEntries.length === 0) continue;
-      this.renderColumn(boardEl, colName, colEntries, colWidth, visibleProps, columnsPerGroup);
+      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup);
     }
   }
   // -----------------------------------------------------------------------
@@ -407,10 +407,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   //  Column & Card
   // -----------------------------------------------------------------------
-  renderColumn(boardEl, name, entries, width, visibleProps, columnsPerGroup) {
+  renderColumn(boardEl, name, entries, cardWidth, visibleProps, columnsPerGroup) {
+    const actualCols = Math.min(entries.length, columnsPerGroup);
+    const colWidth = cardWidth * actualCols;
     const colEl = boardEl.createDiv({ cls: "columns-column" });
-    colEl.style.flexBasis = width + "px";
-    colEl.style.maxWidth = width + "px";
+    colEl.style.flexBasis = colWidth + "px";
+    colEl.style.maxWidth = colWidth + "px";
     const headerEl = colEl.createDiv({ cls: "columns-column-header" });
     const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
     titleSpan.textContent = name;
@@ -419,7 +421,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const cardsEl = colEl.createDiv({ cls: "columns-cards" });
     if (columnsPerGroup > 1) {
       cardsEl.classList.add("is-multi-column");
-      cardsEl.style.setProperty("--cols-per-group", String(columnsPerGroup));
+      cardsEl.style.gridTemplateColumns = `repeat(${actualCols}, ${cardWidth}px)`;
     }
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps);

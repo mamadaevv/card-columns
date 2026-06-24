@@ -25,7 +25,7 @@ import {
 //  Config keys
 // ---------------------------------------------------------------------------
 
-const CFG_COL_WIDTH = "columnWidth";
+const CFG_CARD_WIDTH = "cardWidth";
 const CFG_OPEN_BEHAVIOR = "openBehavior";
 const CFG_WRAP_TITLE = "wrapTitle";
 const CFG_DATE_FORMAT_D = "dateFormatDate";
@@ -123,9 +123,9 @@ class ColumnsView extends BasesView {
             },
           },
           {
-            key: CFG_COL_WIDTH,
+            key: CFG_CARD_WIDTH,
             type: "slider",
-            displayName: "Column width (px)",
+            displayName: "Card width (px)",
             default: 300,
             min: 150,
             max: 700,
@@ -251,8 +251,8 @@ class ColumnsView extends BasesView {
     return parsed ? order[0] : null;
   }
 
-  private getColumnWidth(): number {
-    const v = this.cfg<number>(CFG_COL_WIDTH, 300);
+  private getCardWidth(): number {
+    const v = this.cfg<number>(CFG_CARD_WIDTH, 300);
     return v >= 150 && v <= 700 ? v : 300;
   }
 
@@ -360,7 +360,7 @@ class ColumnsView extends BasesView {
     }
     if (noValueEntries.length > 0) colNames.push("(No value)");
 
-    const colWidth = this.getColumnWidth();
+    const cardWidth = this.getCardWidth();
     const visibleProps = this.getVisiblePropertyIds();
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
 
@@ -385,7 +385,7 @@ class ColumnsView extends BasesView {
 
       if (colEntries.length === 0) continue;
 
-      this.renderColumn(boardEl, colName, colEntries, colWidth, visibleProps, columnsPerGroup);
+      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup);
     }
   }
 
@@ -487,13 +487,15 @@ class ColumnsView extends BasesView {
     boardEl: HTMLElement,
     name: string,
     entries: BasesEntry[],
-    width: number,
+    cardWidth: number,
     visibleProps: string[],
     columnsPerGroup: number,
   ): void {
+    const actualCols = Math.min(entries.length, columnsPerGroup);
+    const colWidth = cardWidth * actualCols;
     const colEl = boardEl.createDiv({ cls: "columns-column" });
-    colEl.style.flexBasis = width + "px";
-    colEl.style.maxWidth = width + "px";
+    colEl.style.flexBasis = colWidth + "px";
+    colEl.style.maxWidth = colWidth + "px";
 
     const headerEl = colEl.createDiv({ cls: "columns-column-header" });
     const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
@@ -504,7 +506,7 @@ class ColumnsView extends BasesView {
     const cardsEl = colEl.createDiv({ cls: "columns-cards" });
     if (columnsPerGroup > 1) {
       cardsEl.classList.add("is-multi-column");
-      cardsEl.style.setProperty("--cols-per-group", String(columnsPerGroup));
+      cardsEl.style.gridTemplateColumns = `repeat(${actualCols}, ${cardWidth}px)`;
     }
 
     for (const entry of entries) {

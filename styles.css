@@ -151,10 +151,9 @@
   min-height: 0;
 }
 
-/* Multi-column layout: cards flow into sub-columns as a grid */
+/* Multi-column grid inside a column */
 .columns-cards.is-multi-column {
   display: grid;
-  grid-template-columns: repeat(var(--cols-per-group, 2), 1fr);
   grid-auto-rows: max-content;
   gap: 12px;
   overflow-y: auto;
