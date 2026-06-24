@@ -85,7 +85,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
             key: CFG_OPEN_BEHAVIOR,
             type: "dropdown",
             displayName: "Open card in",
-            default: "split-right",
+            default: "modal",
             options: {
               active: "Active pane",
               modal: "Floating modal",
