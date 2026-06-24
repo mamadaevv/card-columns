@@ -154,6 +154,7 @@
 /* Multi-column mode: overlay scrollbar so it doesn't steal grid width */
 .columns-column.is-multi-column {
   overflow-y: overlay;
+  padding-bottom: 24px;
 }
 
 .columns-column.is-multi-column .columns-cards {
