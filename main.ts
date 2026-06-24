@@ -492,9 +492,9 @@ class ColumnsView extends BasesView {
     columnsPerGroup: number,
   ): void {
     const actualCols = Math.min(entries.length, columnsPerGroup);
-    // Account for grid gaps (12px), cards container padding (16px), column padding (24px)
+    // Account for grid gaps (12px), cards padding (16px), column padding (24px), border-right (1px)
     const gapTotal = (actualCols - 1) * 12;
-    const paddingOverhead = 40; // 24 column + 16 cards container
+    const paddingOverhead = 41; // 24 column + 16 cards + 1 border-right
     const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
     const colEl = boardEl.createDiv({ cls: "columns-column" });
     colEl.style.flexBasis = colWidth + "px";
