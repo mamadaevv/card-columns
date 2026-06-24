@@ -505,7 +505,7 @@ class ColumnsView extends BasesView {
     const cardsEl = colEl.createDiv({ cls: "columns-cards" });
     if (columnsPerGroup > 1) {
       cardsEl.classList.add("is-multi-column");
-      cardsEl.style.columnCount = String(columnsPerGroup);
+      cardsEl.style.setProperty("--cols-per-group", String(columnsPerGroup));
     }
 
     for (const entry of entries) {

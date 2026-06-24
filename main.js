@@ -419,7 +419,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
     countSpan.textContent = String(entries.length);
     const cardsEl = colEl.createDiv({ cls: "columns-cards" });
     if (columnsPerGroup > 1) {
-      cardsEl.style.columnCount = String(columnsPerGroup);
+      cardsEl.classList.add("is-multi-column");
+      cardsEl.style.setProperty("--cols-per-group", String(columnsPerGroup));
     }
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps);
