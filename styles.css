@@ -361,26 +361,3 @@
   border-top: 1px solid var(--background-modifier-border);
 }
 
-/* ---------------------------------------------------------------------------
-  Style dropdown in bases settings to match Obsidian combobox
-  --------------------------------------------------------------------------- */
-
-.modal select {
-  background: var(--background-primary);
-  color: var(--text-normal);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.modal select:hover {
-  border-color: var(--interactive-accent);
-}
-
-.modal select:focus {
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 2px var(--interactive-accent-hsl);
-}
