@@ -156,6 +156,13 @@
   overflow-y: overlay;
 }
 
+.columns-column.is-multi-column .columns-column-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--background-secondary);
+}
+
 .columns-column.is-multi-column .columns-cards {
   overflow-y: visible;
   flex: none;
