@@ -144,7 +144,6 @@
 .columns-cards-scroll {
   flex: 1;
   overflow-y: overlay;
-  overflow-x: clip;
   min-height: 0;
 }
 

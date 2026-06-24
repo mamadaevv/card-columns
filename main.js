@@ -411,7 +411,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const actualCols = Math.min(entries.length, columnsPerGroup);
     const colEl = boardEl.createDiv({ cls: "columns-column" });
     const gapTotal = (actualCols - 1) * 12;
-    const paddingOverhead = 41;
+    const paddingOverhead = 45;
     const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
     if (columnsPerGroup > 1) {
       colEl.classList.add("is-multi-column");
