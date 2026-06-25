@@ -39,6 +39,12 @@ var CFG_FILTER_HEIGHT = "filterHeight";
 var CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 var CFG_ZEBRA_STRIPING = "zebraStriping";
 var CFG_MASONRY = "masonry";
+var CFG_COVER_SOURCE = "coverSource";
+var CFG_COVER_STYLE = "coverStyle";
+var CFG_COVER_ASPECT = "coverAspect";
+var CFG_COVER_ORIENTATION = "coverOrientation";
+var CFG_COVER_FIT = "coverFit";
+var CFG_COVER_POSITION = "coverPosition";
 var ColumnsPlugin = class extends import_obsidian.Plugin {
   async onload() {
     this.registerBasesView("columns", {
@@ -204,6 +210,76 @@ var ColumnsView = class extends import_obsidian.BasesView {
             placeholder: "en, ru, de, fr, es, ja, zh-cn..."
           }
         ]
+      },
+      {
+        type: "group",
+        displayName: "Cover",
+        items: [
+          {
+            key: CFG_COVER_SOURCE,
+            type: "dropdown",
+            displayName: "Source",
+            default: "none",
+            options: {
+              none: "None",
+              "first-image": "First image in note",
+              property: "Cover property"
+            }
+          },
+          {
+            key: CFG_COVER_STYLE,
+            type: "dropdown",
+            displayName: "Style",
+            default: "borderless",
+            options: {
+              borderless: "Borderless",
+              bordered: "Bordered"
+            }
+          },
+          {
+            key: CFG_COVER_ASPECT,
+            type: "dropdown",
+            displayName: "Aspect ratio",
+            default: "4:3",
+            options: {
+              "1:1": "1:1",
+              "3:2": "3:2",
+              "4:3": "4:3",
+              "16:9": "16:9"
+            }
+          },
+          {
+            key: CFG_COVER_ORIENTATION,
+            type: "dropdown",
+            displayName: "Orientation",
+            default: "landscape",
+            options: {
+              landscape: "Landscape",
+              portrait: "Portrait"
+            }
+          },
+          {
+            key: CFG_COVER_FIT,
+            type: "dropdown",
+            displayName: "Image fit",
+            default: "cover",
+            options: {
+              cover: "Cover (crop edges)",
+              contain: "Contain (fit whole)"
+            }
+          },
+          {
+            key: CFG_COVER_POSITION,
+            type: "dropdown",
+            displayName: "Position in card",
+            default: "above-title",
+            options: {
+              "above-title": "Above title",
+              "below-title": "Below title",
+              "after-all": "After all properties"
+            }
+          }
+        ]
       }
     ];
   }
@@ -258,6 +334,43 @@ var ColumnsView = class extends import_obsidian.BasesView {
       if (titlePropId && id === titlePropId) return false;
       return true;
     });
+  }
+  // -----------------------------------------------------------------------
+  //  Cover
+  // -----------------------------------------------------------------------
+  /** Resolve cover image URL for a file, or null if none found. */
+  getCoverUrl(file) {
+    const src = this.cfg(CFG_COVER_SOURCE, "none");
+    if (src === "none") return null;
+    const cache = this.app.metadataCache.getFileCache(file);
+    if (!cache) return null;
+    let coverPath = null;
+    if (src === "first-image") {
+      const embeds = cache.embeds;
+      if (embeds && embeds.length > 0) {
+        for (const embed of embeds) {
+          if (embed.link && /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(embed.link)) {
+            coverPath = embed.link;
+            break;
+          }
+        }
+      }
+    } else if (src === "property") {
+      const raw = cache.frontmatter?.cover;
+      if (typeof raw === "string" && raw.trim()) {
+        coverPath = raw.trim();
+      }
+    }
+    if (!coverPath) return null;
+    const resolved = this.app.metadataCache.getFirstLinkpathDest(coverPath, file.path);
+    if (resolved && resolved instanceof import_obsidian.TFile) {
+      return this.app.vault.getResourcePath(resolved);
+    }
+    const direct = this.app.vault.getAbstractFileByPath(coverPath);
+    if (direct instanceof import_obsidian.TFile) {
+      return this.app.vault.getResourcePath(direct);
+    }
+    return null;
   }
   // -----------------------------------------------------------------------
   //  Rendering
@@ -469,6 +582,31 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const file = entry.file;
     if (!(file instanceof import_obsidian.TFile)) return;
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
+    const coverSource = this.cfg(CFG_COVER_SOURCE, "none");
+    const hasCover = coverSource !== "none";
+    let coverEl = null;
+    let coverUrl = null;
+    if (hasCover) {
+      coverUrl = this.getCoverUrl(file);
+    }
+    if (hasCover) {
+      const coverStyle = this.cfg(CFG_COVER_STYLE, "borderless");
+      const coverAspect = this.cfg(CFG_COVER_ASPECT, "4:3");
+      const coverOrientation = this.cfg(CFG_COVER_ORIENTATION, "landscape");
+      const coverFit = this.cfg(CFG_COVER_FIT, "cover");
+      coverEl = cardEl.createDiv({ cls: "columns-card-cover" });
+      coverEl.classList.add(`is-${coverStyle}`);
+      coverEl.classList.add(`is-${coverOrientation}`);
+      const [w, h] = coverAspect.split(":").map(Number);
+      coverEl.style.aspectRatio = `${w} / ${h}`;
+      if (coverUrl) {
+        const img = coverEl.createEl("img", { cls: "columns-card-cover-img" });
+        img.src = coverUrl;
+        img.style.objectFit = coverFit;
+      } else {
+        coverEl.classList.add("is-placeholder");
+      }
+    }
     const titlePropId = this.getTitlePropertyId();
     const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.name : file.name;
     const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
@@ -477,11 +615,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
     if (visibleProps.length > 0) titleEl.style.marginBottom = "16px";
+    let chipsEl = null;
     if (visibleProps.length > 0) {
       const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
       const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
       const wrapValues = this.cfg(CFG_WRAP_VALUES, true);
-      const chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
+      chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
       chipsEl.style.setProperty("--chip-fs", chipFontSize + "px");
       if (!wrapValues) chipsEl.addClass("is-clip");
       for (const propId of visibleProps) {
@@ -517,6 +656,19 @@ var ColumnsView = class extends import_obsidian.BasesView {
           } else {
             this.renderChipValue(chip, val, file, isTagProp);
           }
+        }
+      }
+    }
+    if (coverEl) {
+      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
+      if (coverPosition === "below-title") {
+        cardEl.insertBefore(coverEl, titleEl.nextSibling);
+      } else if (coverPosition === "after-all") {
+        const last = chipsEl || titleEl;
+        if (last.nextSibling) {
+          cardEl.insertBefore(coverEl, last.nextSibling);
+        } else {
+          cardEl.appendChild(coverEl);
         }
       }
     }

@@ -212,6 +212,7 @@
   flex-direction: column;
   gap: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .columns-card:hover {
@@ -221,6 +222,59 @@
 
 .columns-card:active {
   background: var(--background-modifier-active);
+}
+
+/* ---------------------------------------------------------------------------
+  Card cover
+  --------------------------------------------------------------------------- */
+
+.columns-card-cover {
+  overflow: hidden;
+}
+
+/* Borderless: bleed to card edges */
+.columns-card-cover.is-borderless {
+  margin-left: -10px;
+  margin-right: -10px;
+  border-radius: 0;
+}
+.columns-card-cover.is-borderless.is-above-title {
+  margin-top: -8px;
+  margin-bottom: 8px;
+  border-radius: 6px 6px 0 0;
+}
+.columns-card-cover.is-borderless.is-below-title {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 0;
+}
+.columns-card-cover.is-borderless.is-after-all {
+  margin-top: 8px;
+  border-radius: 0 0 6px 6px;
+}
+
+/* Bordered: inside card padding */
+.columns-card-cover.is-bordered {
+  border-radius: 6px;
+}
+.columns-card-cover.is-bordered.is-above-title {
+  margin: 0 0 8px;
+}
+.columns-card-cover.is-bordered.is-below-title {
+  margin: 8px 0;
+}
+.columns-card-cover.is-bordered.is-after-all {
+  margin: 8px 0 0;
+}
+
+.columns-card-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.columns-card-cover.is-placeholder {
+  background: var(--background-modifier-hover);
 }
 
 .columns-card-title {

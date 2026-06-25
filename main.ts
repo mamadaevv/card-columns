@@ -41,6 +41,14 @@ const CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 const CFG_ZEBRA_STRIPING = "zebraStriping";
 const CFG_MASONRY = "masonry";
 
+// Cover settings
+const CFG_COVER_SOURCE = "coverSource";
+const CFG_COVER_STYLE = "coverStyle";
+const CFG_COVER_ASPECT = "coverAspect";
+const CFG_COVER_ORIENTATION = "coverOrientation";
+const CFG_COVER_FIT = "coverFit";
+const CFG_COVER_POSITION = "coverPosition";
+
 // ---------------------------------------------------------------------------
 //  Plugin
 // ---------------------------------------------------------------------------
@@ -232,6 +240,76 @@ class ColumnsView extends BasesView {
           },
         ],
       },
+      {
+        type: "group",
+        displayName: "Cover",
+        items: [
+          {
+            key: CFG_COVER_SOURCE,
+            type: "dropdown",
+            displayName: "Source",
+            default: "none",
+            options: {
+              none: "None",
+              "first-image": "First image in note",
+              property: "Cover property",
+            },
+          },
+          {
+            key: CFG_COVER_STYLE,
+            type: "dropdown",
+            displayName: "Style",
+            default: "borderless",
+            options: {
+              borderless: "Borderless",
+              bordered: "Bordered",
+            },
+          },
+          {
+            key: CFG_COVER_ASPECT,
+            type: "dropdown",
+            displayName: "Aspect ratio",
+            default: "4:3",
+            options: {
+              "1:1": "1:1",
+              "3:2": "3:2",
+              "4:3": "4:3",
+              "16:9": "16:9",
+            },
+          },
+          {
+            key: CFG_COVER_ORIENTATION,
+            type: "dropdown",
+            displayName: "Orientation",
+            default: "landscape",
+            options: {
+              landscape: "Landscape",
+              portrait: "Portrait",
+            },
+          },
+          {
+            key: CFG_COVER_FIT,
+            type: "dropdown",
+            displayName: "Image fit",
+            default: "cover",
+            options: {
+              cover: "Cover (crop edges)",
+              contain: "Contain (fit whole)",
+            },
+          },
+          {
+            key: CFG_COVER_POSITION,
+            type: "dropdown",
+            displayName: "Position in card",
+            default: "above-title",
+            options: {
+              "above-title": "Above title",
+              "below-title": "Below title",
+              "after-all": "After all properties",
+            },
+          },
+        ],
+      },
     ];
   }
 
@@ -296,6 +374,56 @@ class ColumnsView extends BasesView {
       if (titlePropId && id === titlePropId) return false;
       return true;
     });
+  }
+
+  // -----------------------------------------------------------------------
+  //  Cover
+  // -----------------------------------------------------------------------
+
+  /** Resolve cover image URL for a file, or null if none found. */
+  private getCoverUrl(file: TFile): string | null {
+    const src = this.cfg<string>(CFG_COVER_SOURCE, "none");
+    if (src === "none") return null;
+
+    const cache = this.app.metadataCache.getFileCache(file);
+    if (!cache) return null;
+
+    let coverPath: string | null = null;
+
+    if (src === "first-image") {
+      // Find first embed that is an image
+      const embeds = cache.embeds;
+      if (embeds && embeds.length > 0) {
+        for (const embed of embeds) {
+          if (embed.link && /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(embed.link)) {
+            coverPath = embed.link;
+            break;
+          }
+        }
+      }
+    } else if (src === "property") {
+      const raw = cache.frontmatter?.cover;
+      if (typeof raw === "string" && raw.trim()) {
+        coverPath = raw.trim();
+      }
+    }
+
+    if (!coverPath) return null;
+
+    // Resolve to an actual resource URL
+    // Handle both explicit vault paths and relative-from-file paths
+    const resolved = this.app.metadataCache.getFirstLinkpathDest(coverPath, file.path);
+    if (resolved && resolved instanceof TFile) {
+      return this.app.vault.getResourcePath(resolved);
+    }
+
+    // Fallback: try as direct vault path
+    const direct = this.app.vault.getAbstractFileByPath(coverPath);
+    if (direct instanceof TFile) {
+      return this.app.vault.getResourcePath(direct);
+    }
+
+    return null;
   }
 
   // -----------------------------------------------------------------------
@@ -567,6 +695,38 @@ class ColumnsView extends BasesView {
 
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
 
+    // ── Cover ────────────────────────────────────────────────────────
+    const coverSource = this.cfg<string>(CFG_COVER_SOURCE, "none");
+    const hasCover = coverSource !== "none";
+    let coverEl: HTMLElement | null = null;
+    let coverUrl: string | null = null;
+
+    if (hasCover) {
+      coverUrl = this.getCoverUrl(file);
+    }
+
+    if (hasCover) {
+      const coverStyle = this.cfg<string>(CFG_COVER_STYLE, "borderless");
+      const coverAspect = this.cfg<string>(CFG_COVER_ASPECT, "4:3");
+      const coverOrientation = this.cfg<string>(CFG_COVER_ORIENTATION, "landscape");
+      const coverFit = this.cfg<string>(CFG_COVER_FIT, "cover");
+
+      coverEl = cardEl.createDiv({ cls: "columns-card-cover" });
+      coverEl.classList.add(`is-${coverStyle}`);
+      coverEl.classList.add(`is-${coverOrientation}`);
+
+      const [w, h] = coverAspect.split(":").map(Number);
+      coverEl.style.aspectRatio = `${w} / ${h}`;
+
+      if (coverUrl) {
+        const img = coverEl.createEl("img", { cls: "columns-card-cover-img" });
+        img.src = coverUrl;
+        img.style.objectFit = coverFit;
+      } else {
+        coverEl.classList.add("is-placeholder");
+      }
+    }
+
     // Title
     const titlePropId = this.getTitlePropertyId();
     const title = titlePropId
@@ -580,11 +740,12 @@ class ColumnsView extends BasesView {
     if (visibleProps.length > 0) titleEl.style.marginBottom = "16px";
 
     // Visible property chips
+    let chipsEl: HTMLElement | null = null;
     if (visibleProps.length > 0) {
     const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
     const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
     const wrapValues = this.cfg(CFG_WRAP_VALUES, true);
-    const chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
+    chipsEl = cardEl.createDiv({ cls: isGrid ? "columns-chips-grid" : "columns-chips" });
     chipsEl.style.setProperty("--chip-fs", chipFontSize + "px");
     if (!wrapValues) chipsEl.addClass("is-clip");
     for (const propId of visibleProps) {
@@ -626,6 +787,22 @@ class ColumnsView extends BasesView {
       }
     }
   }
+
+    // ── Reorder cover to correct position ───────────────────────────
+    if (coverEl) {
+      const coverPosition = this.cfg<string>(CFG_COVER_POSITION, "above-title");
+      if (coverPosition === "below-title") {
+        cardEl.insertBefore(coverEl, titleEl.nextSibling);
+      } else if (coverPosition === "after-all") {
+        const last = chipsEl || titleEl;
+        if (last.nextSibling) {
+          cardEl.insertBefore(coverEl, last.nextSibling);
+        } else {
+          cardEl.appendChild(coverEl);
+        }
+      }
+      // above-title: coverEl is already the first child — nothing to do
+    }
 
     // Click events...
 
