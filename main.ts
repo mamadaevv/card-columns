@@ -749,7 +749,8 @@ class ColumnsView extends BasesView {
     if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
-    if (visibleProps.length > 0) titleEl.style.marginBottom = "16px";
+    const coverPosition = this.cfg<string>(CFG_COVER_POSITION, "above-title");
+    if (visibleProps.length > 0 && coverPosition !== "below-title") titleEl.style.marginBottom = "16px";
 
     // Visible property chips
     let chipsEl: HTMLElement | null = null;

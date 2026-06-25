@@ -595,10 +595,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const coverAspect = this.cfg(CFG_COVER_ASPECT, "auto");
       const coverOrientation = this.cfg(CFG_COVER_ORIENTATION, "landscape");
       const coverFit = this.cfg(CFG_COVER_FIT, "cover");
-      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
+      const coverPosition2 = this.cfg(CFG_COVER_POSITION, "above-title");
       coverEl = cardEl.createDiv({ cls: "columns-card-cover" });
       coverEl.classList.add(`is-${coverStyle}`);
-      coverEl.classList.add(`is-${coverPosition}`);
+      coverEl.classList.add(`is-${coverPosition2}`);
       if (coverAspect === "auto") {
         coverEl.classList.add("is-auto");
       } else {
@@ -625,7 +625,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
     titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
     titleEl.textContent = title;
-    if (visibleProps.length > 0) titleEl.style.marginBottom = "16px";
+    const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
+    if (visibleProps.length > 0 && coverPosition !== "below-title") titleEl.style.marginBottom = "16px";
     let chipsEl = null;
     if (visibleProps.length > 0) {
       const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
@@ -671,10 +672,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
     }
     if (coverEl) {
-      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
-      if (coverPosition === "below-title") {
+      const coverPosition2 = this.cfg(CFG_COVER_POSITION, "above-title");
+      if (coverPosition2 === "below-title") {
         cardEl.insertBefore(coverEl, titleEl.nextSibling);
-      } else if (coverPosition === "after-all") {
+      } else if (coverPosition2 === "after-all") {
         const last = chipsEl || titleEl;
         if (last.nextSibling) {
           cardEl.insertBefore(coverEl, last.nextSibling);
