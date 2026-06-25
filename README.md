@@ -1,6 +1,6 @@
 # Columns
 
-A kanban-style card view for Obsidian. Group notes by tags or any frontmatter property into columns, with tag filtering, property chips, and split‑pane preview.
+A kanban-style card view for Obsidian. Group notes by tags or any frontmatter property into columns, with tag filtering, property chips, card covers, and split‑pane preview.
 
 ## Demo
 
@@ -26,6 +26,7 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 ## Features
 
 - **Column grouping** — group by `tags`, `status`, `category` or any frontmatter property
+- **Card covers** — display cover images from note embeds or frontmatter property; full control over aspect ratio, style, fit, and position
 - **Multi-column groups** — display multiple cards per column in a grid layout (1–6 columns, configurable)
 - **Masonry layout** — alternative card arrangement where cards fill gaps vertically (CSS columns-based, toggle in settings)
 - **Zebra striping** — alternate column backgrounds for easier visual scanning (toggle in settings)
@@ -77,6 +78,14 @@ A kanban-style card view for Obsidian. Group notes by tags or any frontmatter pr
 - Date format
 - Date & time format
 - Locale
+
+### Cover
+- Source (None / First image in note / Cover property)
+- Style (Borderless / Bordered)
+- Aspect ratio (Auto / 1:1 / 3:2 / 4:3 / 16:9)
+- Orientation (Landscape / Portrait)
+- Image fit (Cover / Contain)
+- Position in card (Above title / Below title / After all)
 
 ## Installation
 
