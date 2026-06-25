@@ -1,7 +1,7 @@
 {
   "id": "card-columns",
   "name": "Card Columns",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "minAppVersion": "1.8.0",
   "description": "Kanban-style card view with column grouping, tag filtering, property chips, and split-pane preview. Group notes by tags or any frontmatter property.",
   "author": "Nik M",
