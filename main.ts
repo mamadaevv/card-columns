@@ -805,10 +805,10 @@ class ColumnsView extends BasesView {
           this.renderChipValue(chip, val, file, isTagProp);
         }
       }
-    }
-  }
+      }
+      }
 
-    // ── Reorder cover to correct position ───────────────────────────
+      // ── Reorder cover to correct position ───────────────────────────
     if (coverEl) {
       const coverPosition = this.cfg<string>(CFG_COVER_POSITION, "above-title");
       if (coverPosition === "below-title") {
