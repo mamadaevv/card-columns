@@ -837,11 +837,11 @@ var ColumnsView = class extends import_obsidian.BasesView {
     }
     if (found) {
       splitLeaf.openFile(file);
-      this.app.workspace.setActiveLeaf(splitLeaf, { focus: true });
+      this.app.workspace.setActiveLeaf(splitLeaf, { focus: false });
     } else {
       const newLeaf = this.app.workspace.getLeaf("split", dir);
       newLeaf.openFile(file);
-      this.app.workspace.setActiveLeaf(newLeaf, { focus: true });
+      this.app.workspace.setActiveLeaf(newLeaf, { focus: false });
       this[leafField] = newLeaf;
     }
   }
