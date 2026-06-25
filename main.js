@@ -620,6 +620,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
       } else {
         coverEl.classList.add("is-placeholder");
       }
+      if (visibleProps.length === 0) {
+        cardEl.classList.add("is-cover-only");
+      }
     }
     let titleEl = null;
     let chipsEl = null;
@@ -678,11 +681,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (coverEl) {
       const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
       if (coverPosition === "below-title") {
-        cardEl.insertBefore(coverEl, titleEl.nextSibling);
+        if (titleEl) cardEl.insertBefore(coverEl, titleEl.nextSibling);
       } else if (coverPosition === "after-all") {
         const last = chipsEl || titleEl;
-        if (last.nextSibling) {
+        if (last && last.nextSibling) {
           cardEl.insertBefore(coverEl, last.nextSibling);
+        } else if (!last) {
         } else {
           cardEl.appendChild(coverEl);
         }

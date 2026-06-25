@@ -290,6 +290,18 @@
   background: var(--background-modifier-hover);
 }
 
+/* Cover as only element — fills the entire card */
+.columns-card.is-cover-only {
+  padding: 0;
+}
+.columns-card.is-cover-only > .columns-card-cover {
+  margin: 0;
+  border-radius: 6px;
+}
+.columns-card.is-cover-only .columns-card-cover-img {
+  height: 100%;
+}
+
 .columns-card-title {
   font-size: var(--title-fs, 14px);
   font-weight: 600;

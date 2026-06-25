@@ -742,6 +742,11 @@ class ColumnsView extends BasesView {
       } else {
         coverEl.classList.add("is-placeholder");
       }
+
+      // If cover is the only element (no title, no chips), make it full card
+      if (visibleProps.length === 0) {
+        cardEl.classList.add("is-cover-only");
+      }
     }
 
     // Title
@@ -812,11 +817,13 @@ class ColumnsView extends BasesView {
     if (coverEl) {
       const coverPosition = this.cfg<string>(CFG_COVER_POSITION, "above-title");
       if (coverPosition === "below-title") {
-        cardEl.insertBefore(coverEl, titleEl.nextSibling);
+        if (titleEl) cardEl.insertBefore(coverEl, titleEl.nextSibling);
       } else if (coverPosition === "after-all") {
         const last = chipsEl || titleEl;
-        if (last.nextSibling) {
+        if (last && last.nextSibling) {
           cardEl.insertBefore(coverEl, last.nextSibling);
+        } else if (!last) {
+          // No title or chips — cover is the only child, nothing to reorder
         } else {
           cardEl.appendChild(coverEl);
         }
