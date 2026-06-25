@@ -615,16 +615,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
       } else {
         coverEl.classList.add("is-placeholder");
       }
-      const padX = 10;
-      let padTop = 8;
-      let padBottom = 8;
-      if (coverStyle === "borderless") {
-        if (coverPosition === "above-title") padTop = 0;
-        else if (coverPosition === "after-all") padBottom = 0;
-      }
-      cardEl.style.setProperty("--card-pad-x", padX + "px");
-      cardEl.style.setProperty("--card-pad-t", padTop + "px");
-      cardEl.style.setProperty("--card-pad-b", padBottom + "px");
     }
     const titlePropId = this.getTitlePropertyId();
     const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.name : file.name;
@@ -679,10 +669,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
     }
     if (coverEl) {
-      const coverPosition2 = this.cfg(CFG_COVER_POSITION, "above-title");
-      if (coverPosition2 === "below-title") {
+      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
+      if (coverPosition === "below-title") {
         cardEl.insertBefore(coverEl, titleEl.nextSibling);
-      } else if (coverPosition2 === "after-all") {
+      } else if (coverPosition === "after-all") {
         const last = chipsEl || titleEl;
         if (last.nextSibling) {
           cardEl.insertBefore(coverEl, last.nextSibling);

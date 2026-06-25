@@ -735,18 +735,6 @@ class ColumnsView extends BasesView {
       } else {
         coverEl.classList.add("is-placeholder");
       }
-
-      // Adjust card padding based on cover position
-      const padX = 10;
-      let padTop = 8;
-      let padBottom = 8;
-      if (coverStyle === "borderless") {
-        if (coverPosition === "above-title") padTop = 0;
-        else if (coverPosition === "after-all") padBottom = 0;
-      }
-      cardEl.style.setProperty("--card-pad-x", padX + "px");
-      cardEl.style.setProperty("--card-pad-t", padTop + "px");
-      cardEl.style.setProperty("--card-pad-b", padBottom + "px");
     }
 
     // Title

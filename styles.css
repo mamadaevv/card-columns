@@ -199,7 +199,7 @@
   --------------------------------------------------------------------------- */
 
 .columns-card {
-  padding: var(--card-pad-t, 8px) var(--card-pad-x, 10px) var(--card-pad-b, 8px);
+  padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
   user-select: none;
@@ -234,12 +234,12 @@
 
 /* Borderless: bleed to card edges */
 .columns-card-cover.is-borderless {
-  margin-left: calc(-1 * var(--card-pad-x, 10px));
-  margin-right: calc(-1 * var(--card-pad-x, 10px));
+  margin-left: -10px;
+  margin-right: -10px;
   border-radius: 0;
 }
 .columns-card-cover.is-borderless.is-above-title {
-  margin-top: calc(-1 * var(--card-pad-t, 8px));
+  margin-top: -8px;
   margin-bottom: 8px;
   border-radius: 6px 6px 0 0;
 }
@@ -250,7 +250,6 @@
 }
 .columns-card-cover.is-borderless.is-after-all {
   margin-top: 8px;
-  margin-bottom: calc(-1 * var(--card-pad-b, 8px));
   border-radius: 0 0 6px 6px;
 }
 
