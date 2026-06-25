@@ -598,10 +598,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const coverAspect = this.cfg(CFG_COVER_ASPECT, "auto");
       const coverOrientation = this.cfg(CFG_COVER_ORIENTATION, "landscape");
       const coverFit = this.cfg(CFG_COVER_FIT, "cover");
-      const coverPosition2 = this.cfg(CFG_COVER_POSITION, "above-title");
+      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
       coverEl = cardEl.createDiv({ cls: "columns-card-cover" });
       coverEl.classList.add(`is-${coverStyle}`);
-      coverEl.classList.add(`is-${coverPosition2}`);
+      coverEl.classList.add(`is-${coverPosition}`);
       if (coverAspect === "auto") {
         coverEl.classList.add("is-auto");
       } else {
@@ -621,17 +621,18 @@ var ColumnsView = class extends import_obsidian.BasesView {
         coverEl.classList.add("is-placeholder");
       }
     }
-    const titlePropId = this.getTitlePropertyId();
-    const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.name : file.name;
-    const titleEl = cardEl.createDiv({ cls: "columns-card-title" });
-    if (!this.cfg(CFG_BOLD_TITLE, true)) titleEl.addClass("is-normal-weight");
-    if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
-    titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
-    titleEl.textContent = title;
-    const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
-    if (visibleProps.length > 0 && coverPosition !== "below-title") titleEl.style.marginBottom = "16px";
+    let titleEl = null;
     let chipsEl = null;
     if (visibleProps.length > 0) {
+      const titlePropId = this.getTitlePropertyId();
+      const title = titlePropId ? entry.getValue(titlePropId)?.toString() ?? file.name : file.name;
+      titleEl = cardEl.createDiv({ cls: "columns-card-title" });
+      if (!this.cfg(CFG_BOLD_TITLE, true)) titleEl.addClass("is-normal-weight");
+      if (this.cfg(CFG_WRAP_TITLE, true)) titleEl.addClass("is-wrap");
+      titleEl.style.setProperty("--title-fs", this.cfg(CFG_TITLE_FONT_SIZE, 14) + "px");
+      titleEl.textContent = title;
+      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
+      if (coverPosition !== "below-title") titleEl.style.marginBottom = "16px";
       const isGrid = this.cfg(CFG_CHIP_GRID, "stack") === "grid";
       const chipFontSize = this.cfg(CFG_CHIP_FONT_SIZE, 12);
       const wrapValues = this.cfg(CFG_WRAP_VALUES, true);
@@ -675,10 +676,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
     }
     if (coverEl) {
-      const coverPosition2 = this.cfg(CFG_COVER_POSITION, "above-title");
-      if (coverPosition2 === "below-title") {
+      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
+      if (coverPosition === "below-title") {
         cardEl.insertBefore(coverEl, titleEl.nextSibling);
-      } else if (coverPosition2 === "after-all") {
+      } else if (coverPosition === "after-all") {
         const last = chipsEl || titleEl;
         if (last.nextSibling) {
           cardEl.insertBefore(coverEl, last.nextSibling);
