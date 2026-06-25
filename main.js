@@ -595,8 +595,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const coverAspect = this.cfg(CFG_COVER_ASPECT, "auto");
       const coverOrientation = this.cfg(CFG_COVER_ORIENTATION, "landscape");
       const coverFit = this.cfg(CFG_COVER_FIT, "cover");
+      const coverPosition = this.cfg(CFG_COVER_POSITION, "above-title");
       coverEl = cardEl.createDiv({ cls: "columns-card-cover" });
       coverEl.classList.add(`is-${coverStyle}`);
+      coverEl.classList.add(`is-${coverPosition}`);
       if (coverAspect === "auto") {
         coverEl.classList.add("is-auto");
       } else {
