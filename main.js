@@ -362,7 +362,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     } else if (src === "property") {
       const raw = cache.frontmatter?.cover;
       if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim();
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
     if (!coverPath) return null;

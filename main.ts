@@ -410,7 +410,7 @@ class ColumnsView extends BasesView {
     } else if (src === "property") {
       const raw = cache.frontmatter?.cover;
       if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim();
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
 
