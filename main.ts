@@ -99,6 +99,21 @@ class ColumnsView extends BasesView {
   }
 
   onload(): void {
+    // Release the saved scroll position as soon as the user scrolls
+    // manually — otherwise the first scroll input would be cancelled by
+    // a stale restoration. Bound once to scrollEl (not to cards), so the
+    // listener survives every render() rebuild of the inner DOM.
+    const release = () => {
+      this.pendingScrollLeft = null;
+    };
+    this.scrollEl.addEventListener("wheel", release, { passive: true });
+    this.scrollEl.addEventListener("pointerdown", release);
+    this.scrollEl.addEventListener("touchstart", release, { passive: true });
+    this.scrollEl.addEventListener("keydown", (e) => {
+      // Arrow / Page keys scroll the view — treat as user scroll input
+      if (["ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]
+        .includes(e.key)) release();
+    });
     this.render();
   }
 
@@ -516,14 +531,16 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
-    // Capture the current scroll position so it survives the rebuild below.
-    // Drag & drop sets pendingScrollLeft to a known-good value before the
-    // processFrontMatter-triggered re-render fires.
-    if (this.pendingScrollLeft === null) {
-      this.pendingScrollLeft = this.scrollEl.scrollLeft;
-    }
+    // Restore the scroll position we captured in the drop handler.
+    // We use the same value across multiple consecutive re-renders that
+    // processFrontMatter may trigger (metadataCache can emit 'changed'
+    // several times for a single write). The value is cleared by user
+    // input on the scrollEl, not by render() itself.
     const savedScrollLeft = this.pendingScrollLeft;
-    this.pendingScrollLeft = null;
+    // NOTE: do NOT clear pendingScrollLeft here. processFrontMatter can
+    // fire onDataUpdated multiple times; each render() must restore the
+    // same target. The value is released by user scroll input on
+    // scrollEl (see the listeners in onload()).
 
     this.containerEl.empty();
 
@@ -650,15 +667,19 @@ class ColumnsView extends BasesView {
     // Restore the scroll position we captured at the top of render().
     // requestAnimationFrame ensures the new board is laid out — without it
     // the browser clamps scrollLeft to the (still-zero) scrollWidth and
-    // the board snaps back to 0.
+    // Restore the scroll position we captured in the drop handler.
+    // processFrontMatter can fire metadataCache.on("changed") several
+    // times for a single write, so we restore both on the next two
+    // animation frames AND with a delayed setTimeout in case the
+    // re-render cascade keeps going past a frame or two.
     if (savedScrollLeft !== null && savedScrollLeft > 0) {
-      const target = Math.min(
-        savedScrollLeft,
-        this.scrollEl.scrollWidth - this.scrollEl.clientWidth,
-      );
-      requestAnimationFrame(() => {
-        this.scrollEl.scrollLeft = Math.max(0, target);
-      });
+      const restore = () => {
+        const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
+        this.scrollEl.scrollLeft = Math.max(0, Math.min(savedScrollLeft, max));
+      };
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+      setTimeout(restore, 50);
+      setTimeout(restore, 200);
     }
   }
 

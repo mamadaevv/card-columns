@@ -75,6 +75,15 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
   }
   onload() {
+    const release = () => {
+      this.pendingScrollLeft = null;
+    };
+    this.scrollEl.addEventListener("wheel", release, { passive: true });
+    this.scrollEl.addEventListener("pointerdown", release);
+    this.scrollEl.addEventListener("touchstart", release, { passive: true });
+    this.scrollEl.addEventListener("keydown", (e) => {
+      if (["ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"].includes(e.key)) release();
+    });
     this.render();
   }
   onunload() {
@@ -442,11 +451,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
-    if (this.pendingScrollLeft === null) {
-      this.pendingScrollLeft = this.scrollEl.scrollLeft;
-    }
     const savedScrollLeft = this.pendingScrollLeft;
-    this.pendingScrollLeft = null;
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -538,13 +543,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
     if (savedScrollLeft !== null && savedScrollLeft > 0) {
-      const target = Math.min(
-        savedScrollLeft,
-        this.scrollEl.scrollWidth - this.scrollEl.clientWidth
-      );
-      requestAnimationFrame(() => {
-        this.scrollEl.scrollLeft = Math.max(0, target);
-      });
+      const restore = () => {
+        const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
+        this.scrollEl.scrollLeft = Math.max(0, Math.min(savedScrollLeft, max));
+      };
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+      setTimeout(restore, 50);
+      setTimeout(restore, 200);
     }
   }
   // -----------------------------------------------------------------------
