@@ -676,11 +676,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
     }
-    if (entries.length === 0) {
-      cardsEl.classList.add("is-empty");
-      const hint = cardsEl.createDiv({ cls: "columns-empty-hint" });
-      hint.textContent = "Drop cards here";
-    }
   }
   renderCard(cardsEl, entry, visibleProps, columnName, dragDropEnabled) {
     const file = entry.file;

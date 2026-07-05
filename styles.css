@@ -516,25 +516,3 @@
   /* Intentionally left empty — column stays neutral during drag. */
 }
 
-/* Empty custom-list lane — a faint placeholder so the column reads as
-   "this is a real lane, drop something into it" rather than broken. */
-.columns-cards.is-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  border: 1px dashed var(--background-modifier-border);
-  border-radius: 6px;
-  margin: 4px 8px 12px;
-  padding: 12px;
-  flex: 1;
-}
-
-.columns-empty-hint {
-  font-size: 12px;
-  color: var(--text-faint);
-  font-style: italic;
-  user-select: none;
-  pointer-events: none;
-}
-

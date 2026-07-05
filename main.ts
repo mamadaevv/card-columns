@@ -819,15 +819,6 @@ class ColumnsView extends BasesView {
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
     }
-
-    // Empty-column hint: shown when this lane is part of the user's
-    // custom column list but has no cards yet. Gives the column a clear
-    // drop target visual.
-    if (entries.length === 0) {
-      cardsEl.classList.add("is-empty");
-      const hint = cardsEl.createDiv({ cls: "columns-empty-hint" });
-      hint.textContent = "Drop cards here";
-    }
   }
 
   private renderCard(
