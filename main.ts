@@ -537,10 +537,7 @@ class ColumnsView extends BasesView {
     // several times for a single write). The value is cleared by user
     // input on the scrollEl, not by render() itself.
     const savedScrollLeft = this.pendingScrollLeft;
-    // NOTE: do NOT clear pendingScrollLeft here. processFrontMatter can
-    // fire onDataUpdated multiple times; each render() must restore the
-    // same target. The value is released by user scroll input on
-    // scrollEl (see the listeners in onload()).
+    console.log("[columns] render(), savedScrollLeft =", savedScrollLeft, "current scrollLeft =", this.scrollEl.scrollLeft);
 
     this.containerEl.empty();
 
@@ -675,7 +672,9 @@ class ColumnsView extends BasesView {
     if (savedScrollLeft !== null && savedScrollLeft > 0) {
       const restore = () => {
         const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
+        const before = this.scrollEl.scrollLeft;
         this.scrollEl.scrollLeft = Math.max(0, Math.min(savedScrollLeft, max));
+        console.log("[columns] restore(): was =", before, "→", this.scrollEl.scrollLeft, "max =", max);
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
@@ -843,6 +842,7 @@ class ColumnsView extends BasesView {
         colEl.classList.remove("is-drop-target");
         // Suppress the click that browsers fire right after a successful drop
         this.suppressNextClick = true;
+        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
         // Remember the scroll position NOW. processFrontMatter triggers
         // metadataCache → onDataUpdated → render() which rebuilds the
         // board from scratch. Without this snapshot the new board resets

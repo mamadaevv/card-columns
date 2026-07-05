@@ -452,6 +452,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   render() {
     const savedScrollLeft = this.pendingScrollLeft;
+    console.log("[columns] render(), savedScrollLeft =", savedScrollLeft, "current scrollLeft =", this.scrollEl.scrollLeft);
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -545,7 +546,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (savedScrollLeft !== null && savedScrollLeft > 0) {
       const restore = () => {
         const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
+        const before = this.scrollEl.scrollLeft;
         this.scrollEl.scrollLeft = Math.max(0, Math.min(savedScrollLeft, max));
+        console.log("[columns] restore(): was =", before, "\u2192", this.scrollEl.scrollLeft, "max =", max);
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
@@ -678,6 +681,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
         e.preventDefault();
         colEl.classList.remove("is-drop-target");
         this.suppressNextClick = true;
+        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
         this.pendingScrollLeft = this.scrollEl.scrollLeft;
         void this.moveCardToColumn(filePath, sourceCol, name);
       });
