@@ -453,7 +453,15 @@ var ColumnsView = class extends import_obsidian.BasesView {
   render() {
     const beforeScrollLeft = this.scrollEl.scrollLeft;
     const beforeScrollWidth = this.scrollEl.scrollWidth;
-    console.log("[columns] render() before, scrollLeft =", beforeScrollLeft, "scrollWidth =", beforeScrollWidth);
+    const beforeClientWidth = this.scrollEl.clientWidth;
+    console.log(
+      "[columns] render() before, scrollLeft =",
+      beforeScrollLeft,
+      "scrollWidth =",
+      beforeScrollWidth,
+      "clientWidth =",
+      beforeClientWidth
+    );
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -544,12 +552,30 @@ var ColumnsView = class extends import_obsidian.BasesView {
       if (colEntries.length === 0 && !isCustomList) continue;
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
-    if (beforeScrollLeft > 0) {
+    const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
+    const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
+    console.log("[columns] restore plan: ratio =", ratio);
+    if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
-        const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
+        const newScrollWidth = this.scrollEl.scrollWidth;
+        const newClientWidth = this.scrollEl.clientWidth;
+        const newMax = Math.max(0, newScrollWidth - newClientWidth);
+        const target = Math.round(ratio * newMax);
         const was = this.scrollEl.scrollLeft;
-        this.scrollEl.scrollLeft = Math.max(0, Math.min(beforeScrollLeft, max));
-        console.log("[columns] restore(): was =", was, "\u2192", this.scrollEl.scrollLeft, "max =", max);
+        this.scrollEl.scrollLeft = Math.max(0, Math.min(target, newMax));
+        console.log(
+          "[columns] restore(): was =",
+          was,
+          "\u2192",
+          this.scrollEl.scrollLeft,
+          "newMax =",
+          newMax,
+          "(newScrollWidth =",
+          newScrollWidth,
+          "newClientWidth =",
+          newClientWidth,
+          ")"
+        );
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);

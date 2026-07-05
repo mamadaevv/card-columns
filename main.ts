@@ -538,7 +538,12 @@ class ColumnsView extends BasesView {
     // to the new scrollWidth after the rebuild.
     const beforeScrollLeft = this.scrollEl.scrollLeft;
     const beforeScrollWidth = this.scrollEl.scrollWidth;
-    console.log("[columns] render() before, scrollLeft =", beforeScrollLeft, "scrollWidth =", beforeScrollWidth);
+    const beforeClientWidth = this.scrollEl.clientWidth;
+    console.log(
+      "[columns] render() before, scrollLeft =", beforeScrollLeft,
+      "scrollWidth =", beforeScrollWidth,
+      "clientWidth =", beforeClientWidth,
+    );
 
     this.containerEl.empty();
 
@@ -666,15 +671,27 @@ class ColumnsView extends BasesView {
     // requestAnimationFrame ensures the new board is laid out — without it
     // the browser clamps scrollLeft to the (still-zero) scrollWidth and
     // Restore the scroll position we captured at the top of render().
-    // We use the actual value (not pendingScrollLeft) so every re-render
-    // — from any source: drag & drop, filter change, settings update —
-    // preserves the user's horizontal position.
-    if (beforeScrollLeft > 0) {
+    // Use proportional scroll (ratio) so a board that grew or shrank
+    // after the rebuild keeps the user looking at the same area
+    // instead of snapping to 0 or to the absolute old position.
+    const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
+    const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
+    console.log("[columns] restore plan: ratio =", ratio);
+
+    if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
-        const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
+        const newScrollWidth = this.scrollEl.scrollWidth;
+        const newClientWidth = this.scrollEl.clientWidth;
+        const newMax = Math.max(0, newScrollWidth - newClientWidth);
+        const target = Math.round(ratio * newMax);
         const was = this.scrollEl.scrollLeft;
-        this.scrollEl.scrollLeft = Math.max(0, Math.min(beforeScrollLeft, max));
-        console.log("[columns] restore(): was =", was, "→", this.scrollEl.scrollLeft, "max =", max);
+        this.scrollEl.scrollLeft = Math.max(0, Math.min(target, newMax));
+        console.log(
+          "[columns] restore(): was =", was,
+          "→", this.scrollEl.scrollLeft,
+          "newMax =", newMax,
+          "(newScrollWidth =", newScrollWidth, "newClientWidth =", newClientWidth, ")",
+        );
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
