@@ -501,8 +501,9 @@
 }
 
 .columns-card.is-dragging {
-  /* Gentle lift effect — the card looks "picked up" but stays clearly visible */
-  opacity: 0.85;
+  /* Card looks "picked up" but stays clearly visible. Higher transparency
+     makes the source card recede so the drop target reads as the focus. */
+  opacity: 0.35;
   transform: scale(0.985);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.06),
