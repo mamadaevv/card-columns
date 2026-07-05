@@ -41,6 +41,7 @@ const CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 const CFG_ZEBRA_STRIPING = "zebraStriping";
 const CFG_MASONRY = "masonry";
 const CFG_DRAG_DROP = "dragDrop";
+const CFG_COLUMN_ORDER = "columnOrder";
 
 // Cover settings
 const CFG_COVER_SOURCE = "coverSource";
@@ -169,6 +170,13 @@ class ColumnsView extends BasesView {
             type: "toggle",
             displayName: "Drag & drop cards between columns",
             default: true,
+          },
+          {
+            key: CFG_COLUMN_ORDER,
+            type: "text",
+            displayName: "Column list (comma-separated, leave empty for auto)",
+            placeholder: "Todo, InProgress, Done",
+            default: "",
           },
         ],
       },
@@ -569,11 +577,28 @@ class ColumnsView extends BasesView {
     this.renderFilterBar(columnMap);
 
     // Build column display list — only show columns matching selected tags
-    let colNames = Array.from(columnMap.keys()).sort();
+    let colNames: string[];
+
+    // Custom column list (comma-separated) — when set, fixes the set and
+    // the order of columns. Empty columns are rendered so the user has
+    // a stable kanban-style board layout.
+    const customRaw = this.cfg<string>(CFG_COLUMN_ORDER, "").trim();
+    if (customRaw) {
+      colNames = customRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      // De-duplicate while preserving the user's order
+      colNames = Array.from(new Set(colNames));
+    } else {
+      colNames = Array.from(columnMap.keys()).sort();
+    }
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
-    if (noValueEntries.length > 0) colNames.push("(No value)");
+    if (noValueEntries.length > 0 && !colNames.includes("(No value)")) {
+      colNames.push("(No value)");
+    }
 
     const cardWidth = this.getCardWidth();
     const visibleProps = this.getVisiblePropertyIds();
@@ -581,6 +606,7 @@ class ColumnsView extends BasesView {
     const isZebra = this.cfg<boolean>(CFG_ZEBRA_STRIPING, false);
     const isMasonry = this.cfg<boolean>(CFG_MASONRY, false);
 
+    const isCustomList = !!customRaw;
     for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
       const colName = colNames[colIdx];
       let colEntries: BasesEntry[];
@@ -591,7 +617,7 @@ class ColumnsView extends BasesView {
           (e) => e.file?.path && filteredPaths.includes(e.file.path),
         );
       } else {
-        const raw = columnMap.get(colName)!;
+        const raw = columnMap.get(colName) ?? [];
         const paths = raw.map((e) => e.file?.path ?? "");
         const filteredPaths = applyFilters(paths);
         colEntries = raw.filter(
@@ -601,7 +627,9 @@ class ColumnsView extends BasesView {
 
       const columnsPerGroup = this.cfg<number>(CFG_COLUMNS_PER_GROUP, 1);
 
-      if (colEntries.length === 0) continue;
+      // Hide empty columns only in auto mode. In custom mode, an empty
+      // column from the user's list is a valid kanban lane.
+      if (colEntries.length === 0 && !isCustomList) continue;
 
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
@@ -787,6 +815,15 @@ class ColumnsView extends BasesView {
 
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
+    }
+
+    // Empty-column hint: shown when this lane is part of the user's
+    // custom column list but has no cards yet. Gives the column a clear
+    // drop target visual.
+    if (entries.length === 0) {
+      cardsEl.classList.add("is-empty");
+      const hint = cardsEl.createDiv({ cls: "columns-empty-hint" });
+      hint.textContent = "Drop cards here";
     }
   }
 

@@ -40,6 +40,7 @@ var CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 var CFG_ZEBRA_STRIPING = "zebraStriping";
 var CFG_MASONRY = "masonry";
 var CFG_DRAG_DROP = "dragDrop";
+var CFG_COLUMN_ORDER = "columnOrder";
 var CFG_COVER_SOURCE = "coverSource";
 var CFG_COVER_STYLE = "coverStyle";
 var CFG_COVER_ASPECT = "coverAspect";
@@ -140,6 +141,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
             type: "toggle",
             displayName: "Drag & drop cards between columns",
             default: true
+          },
+          {
+            key: CFG_COLUMN_ORDER,
+            type: "text",
+            displayName: "Column list (comma-separated, leave empty for auto)",
+            placeholder: "Todo, InProgress, Done",
+            default: ""
           }
         ]
       },
@@ -479,16 +487,26 @@ var ColumnsView = class extends import_obsidian.BasesView {
       );
     };
     this.renderFilterBar(columnMap);
-    let colNames = Array.from(columnMap.keys()).sort();
+    let colNames;
+    const customRaw = this.cfg(CFG_COLUMN_ORDER, "").trim();
+    if (customRaw) {
+      colNames = customRaw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+      colNames = Array.from(new Set(colNames));
+    } else {
+      colNames = Array.from(columnMap.keys()).sort();
+    }
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
-    if (noValueEntries.length > 0) colNames.push("(No value)");
+    if (noValueEntries.length > 0 && !colNames.includes("(No value)")) {
+      colNames.push("(No value)");
+    }
     const cardWidth = this.getCardWidth();
     const visibleProps = this.getVisiblePropertyIds();
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
     const isZebra = this.cfg(CFG_ZEBRA_STRIPING, false);
     const isMasonry = this.cfg(CFG_MASONRY, false);
+    const isCustomList = !!customRaw;
     for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
       const colName = colNames[colIdx];
       let colEntries;
@@ -499,7 +517,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
           (e) => e.file?.path && filteredPaths.includes(e.file.path)
         );
       } else {
-        const raw = columnMap.get(colName);
+        const raw = columnMap.get(colName) ?? [];
         const paths = raw.map((e) => e.file?.path ?? "");
         const filteredPaths = applyFilters(paths);
         colEntries = raw.filter(
@@ -507,7 +525,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
         );
       }
       const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
-      if (colEntries.length === 0) continue;
+      if (colEntries.length === 0 && !isCustomList) continue;
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
   }
@@ -657,6 +675,11 @@ var ColumnsView = class extends import_obsidian.BasesView {
     }
     for (const entry of entries) {
       this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
+    }
+    if (entries.length === 0) {
+      cardsEl.classList.add("is-empty");
+      const hint = cardsEl.createDiv({ cls: "columns-empty-hint" });
+      hint.textContent = "Drop cards here";
     }
   }
   renderCard(cardsEl, entry, visibleProps, columnName, dragDropEnabled) {
