@@ -82,6 +82,10 @@ class ColumnsView extends BasesView {
   splitLeafRight: WorkspaceLeaf | null = null;
   splitLeafDown: WorkspaceLeaf | null = null;
   suppressNextClick = false;
+  /** Scroll position to restore after the next render. Set by drag & drop
+   *  so a re-render triggered by processFrontMatter doesn't snap the
+   *  board back to scrollLeft=0. */
+  pendingScrollLeft: number | null = null;
 
   constructor(
     controller: QueryController,
@@ -512,6 +516,15 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
+    // Capture the current scroll position so it survives the rebuild below.
+    // Drag & drop sets pendingScrollLeft to a known-good value before the
+    // processFrontMatter-triggered re-render fires.
+    if (this.pendingScrollLeft === null) {
+      this.pendingScrollLeft = this.scrollEl.scrollLeft;
+    }
+    const savedScrollLeft = this.pendingScrollLeft;
+    this.pendingScrollLeft = null;
+
     this.containerEl.empty();
 
     const entries = this.data?.data ?? [];
@@ -632,6 +645,20 @@ class ColumnsView extends BasesView {
       if (colEntries.length === 0 && !isCustomList) continue;
 
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
+    }
+
+    // Restore the scroll position we captured at the top of render().
+    // requestAnimationFrame ensures the new board is laid out — without it
+    // the browser clamps scrollLeft to the (still-zero) scrollWidth and
+    // the board snaps back to 0.
+    if (savedScrollLeft !== null && savedScrollLeft > 0) {
+      const target = Math.min(
+        savedScrollLeft,
+        this.scrollEl.scrollWidth - this.scrollEl.clientWidth,
+      );
+      requestAnimationFrame(() => {
+        this.scrollEl.scrollLeft = Math.max(0, target);
+      });
     }
   }
 
@@ -795,6 +822,11 @@ class ColumnsView extends BasesView {
         colEl.classList.remove("is-drop-target");
         // Suppress the click that browsers fire right after a successful drop
         this.suppressNextClick = true;
+        // Remember the scroll position NOW. processFrontMatter triggers
+        // metadataCache → onDataUpdated → render() which rebuilds the
+        // board from scratch. Without this snapshot the new board resets
+        // to scrollLeft=0 and the view snaps back to the left edge.
+        this.pendingScrollLeft = this.scrollEl.scrollLeft;
         void this.moveCardToColumn(filePath, sourceCol, name);
       });
     }

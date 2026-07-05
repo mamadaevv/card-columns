@@ -66,6 +66,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.splitLeafRight = null;
     this.splitLeafDown = null;
     this.suppressNextClick = false;
+    /** Scroll position to restore after the next render. Set by drag & drop
+     *  so a re-render triggered by processFrontMatter doesn't snap the
+     *  board back to scrollLeft=0. */
+    this.pendingScrollLeft = null;
     this.scrollEl = scrollEl;
     this.plugin = plugin;
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
@@ -438,6 +442,11 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
+    if (this.pendingScrollLeft === null) {
+      this.pendingScrollLeft = this.scrollEl.scrollLeft;
+    }
+    const savedScrollLeft = this.pendingScrollLeft;
+    this.pendingScrollLeft = null;
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -527,6 +536,15 @@ var ColumnsView = class extends import_obsidian.BasesView {
       const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
       if (colEntries.length === 0 && !isCustomList) continue;
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
+    }
+    if (savedScrollLeft !== null && savedScrollLeft > 0) {
+      const target = Math.min(
+        savedScrollLeft,
+        this.scrollEl.scrollWidth - this.scrollEl.clientWidth
+      );
+      requestAnimationFrame(() => {
+        this.scrollEl.scrollLeft = Math.max(0, target);
+      });
     }
   }
   // -----------------------------------------------------------------------
@@ -655,6 +673,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
         e.preventDefault();
         colEl.classList.remove("is-drop-target");
         this.suppressNextClick = true;
+        this.pendingScrollLeft = this.scrollEl.scrollLeft;
         void this.moveCardToColumn(filePath, sourceCol, name);
       });
     }
