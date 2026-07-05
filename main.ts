@@ -531,14 +531,15 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
-    // Snapshot the current scroll position before we tear down the
-    // board. We do this unconditionally on every render so that any
-    // re-render (drag & drop, filter, settings change) preserves the
-    // user's horizontal scroll position. The captured value is clamped
-    // to the new scrollWidth after the rebuild.
-    const beforeScrollLeft = this.scrollEl.scrollLeft;
-    const beforeScrollWidth = this.scrollEl.scrollWidth;
-    const beforeClientWidth = this.scrollEl.clientWidth;
+    // Snapshot the current scroll position of the .columns-board before
+    // we tear it down. scrollEl is NOT the scrolling element — the
+    // .columns-board inside it is (display: flex, overflow-x: auto).
+    // Capturing scrollEl.scrollLeft always returned 0 because nothing
+    // actually scrolls there.
+    const oldBoard = this.containerEl.querySelector<HTMLElement>(".columns-board");
+    const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
+    const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
+    const beforeClientWidth = oldBoard?.clientWidth ?? 0;
     console.log(
       "[columns] render() before, scrollLeft =", beforeScrollLeft,
       "scrollWidth =", beforeScrollWidth,
@@ -680,15 +681,17 @@ class ColumnsView extends BasesView {
 
     if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
-        const newScrollWidth = this.scrollEl.scrollWidth;
-        const newClientWidth = this.scrollEl.clientWidth;
+        const newBoard = this.containerEl.querySelector<HTMLElement>(".columns-board");
+        if (!newBoard) return;
+        const newScrollWidth = newBoard.scrollWidth;
+        const newClientWidth = newBoard.clientWidth;
         const newMax = Math.max(0, newScrollWidth - newClientWidth);
         const target = Math.round(ratio * newMax);
-        const was = this.scrollEl.scrollLeft;
-        this.scrollEl.scrollLeft = Math.max(0, Math.min(target, newMax));
+        const was = newBoard.scrollLeft;
+        newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
         console.log(
           "[columns] restore(): was =", was,
-          "→", this.scrollEl.scrollLeft,
+          "→", newBoard.scrollLeft,
           "newMax =", newMax,
           "(newScrollWidth =", newScrollWidth, "newClientWidth =", newClientWidth, ")",
         );

@@ -451,9 +451,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
-    const beforeScrollLeft = this.scrollEl.scrollLeft;
-    const beforeScrollWidth = this.scrollEl.scrollWidth;
-    const beforeClientWidth = this.scrollEl.clientWidth;
+    const oldBoard = this.containerEl.querySelector(".columns-board");
+    const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
+    const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
+    const beforeClientWidth = oldBoard?.clientWidth ?? 0;
     console.log(
       "[columns] render() before, scrollLeft =",
       beforeScrollLeft,
@@ -557,17 +558,19 @@ var ColumnsView = class extends import_obsidian.BasesView {
     console.log("[columns] restore plan: ratio =", ratio);
     if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
-        const newScrollWidth = this.scrollEl.scrollWidth;
-        const newClientWidth = this.scrollEl.clientWidth;
+        const newBoard = this.containerEl.querySelector(".columns-board");
+        if (!newBoard) return;
+        const newScrollWidth = newBoard.scrollWidth;
+        const newClientWidth = newBoard.clientWidth;
         const newMax = Math.max(0, newScrollWidth - newClientWidth);
         const target = Math.round(ratio * newMax);
-        const was = this.scrollEl.scrollLeft;
-        this.scrollEl.scrollLeft = Math.max(0, Math.min(target, newMax));
+        const was = newBoard.scrollLeft;
+        newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
         console.log(
           "[columns] restore(): was =",
           was,
           "\u2192",
-          this.scrollEl.scrollLeft,
+          newBoard.scrollLeft,
           "newMax =",
           newMax,
           "(newScrollWidth =",
