@@ -531,13 +531,14 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
-    // Restore the scroll position we captured in the drop handler.
-    // We use the same value across multiple consecutive re-renders that
-    // processFrontMatter may trigger (metadataCache can emit 'changed'
-    // several times for a single write). The value is cleared by user
-    // input on the scrollEl, not by render() itself.
-    const savedScrollLeft = this.pendingScrollLeft;
-    console.log("[columns] render(), savedScrollLeft =", savedScrollLeft, "current scrollLeft =", this.scrollEl.scrollLeft);
+    // Snapshot the current scroll position before we tear down the
+    // board. We do this unconditionally on every render so that any
+    // re-render (drag & drop, filter, settings change) preserves the
+    // user's horizontal scroll position. The captured value is clamped
+    // to the new scrollWidth after the rebuild.
+    const beforeScrollLeft = this.scrollEl.scrollLeft;
+    const beforeScrollWidth = this.scrollEl.scrollWidth;
+    console.log("[columns] render() before, scrollLeft =", beforeScrollLeft, "scrollWidth =", beforeScrollWidth);
 
     this.containerEl.empty();
 
@@ -664,17 +665,16 @@ class ColumnsView extends BasesView {
     // Restore the scroll position we captured at the top of render().
     // requestAnimationFrame ensures the new board is laid out — without it
     // the browser clamps scrollLeft to the (still-zero) scrollWidth and
-    // Restore the scroll position we captured in the drop handler.
-    // processFrontMatter can fire metadataCache.on("changed") several
-    // times for a single write, so we restore both on the next two
-    // animation frames AND with a delayed setTimeout in case the
-    // re-render cascade keeps going past a frame or two.
-    if (savedScrollLeft !== null && savedScrollLeft > 0) {
+    // Restore the scroll position we captured at the top of render().
+    // We use the actual value (not pendingScrollLeft) so every re-render
+    // — from any source: drag & drop, filter change, settings update —
+    // preserves the user's horizontal position.
+    if (beforeScrollLeft > 0) {
       const restore = () => {
         const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
-        const before = this.scrollEl.scrollLeft;
-        this.scrollEl.scrollLeft = Math.max(0, Math.min(savedScrollLeft, max));
-        console.log("[columns] restore(): was =", before, "→", this.scrollEl.scrollLeft, "max =", max);
+        const was = this.scrollEl.scrollLeft;
+        this.scrollEl.scrollLeft = Math.max(0, Math.min(beforeScrollLeft, max));
+        console.log("[columns] restore(): was =", was, "→", this.scrollEl.scrollLeft, "max =", max);
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);

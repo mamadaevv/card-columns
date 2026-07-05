@@ -451,8 +451,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
-    const savedScrollLeft = this.pendingScrollLeft;
-    console.log("[columns] render(), savedScrollLeft =", savedScrollLeft, "current scrollLeft =", this.scrollEl.scrollLeft);
+    const beforeScrollLeft = this.scrollEl.scrollLeft;
+    const beforeScrollWidth = this.scrollEl.scrollWidth;
+    console.log("[columns] render() before, scrollLeft =", beforeScrollLeft, "scrollWidth =", beforeScrollWidth);
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -543,12 +544,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
       if (colEntries.length === 0 && !isCustomList) continue;
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
-    if (savedScrollLeft !== null && savedScrollLeft > 0) {
+    if (beforeScrollLeft > 0) {
       const restore = () => {
         const max = this.scrollEl.scrollWidth - this.scrollEl.clientWidth;
-        const before = this.scrollEl.scrollLeft;
-        this.scrollEl.scrollLeft = Math.max(0, Math.min(savedScrollLeft, max));
-        console.log("[columns] restore(): was =", before, "\u2192", this.scrollEl.scrollLeft, "max =", max);
+        const was = this.scrollEl.scrollLeft;
+        this.scrollEl.scrollLeft = Math.max(0, Math.min(beforeScrollLeft, max));
+        console.log("[columns] restore(): was =", was, "\u2192", this.scrollEl.scrollLeft, "max =", max);
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
