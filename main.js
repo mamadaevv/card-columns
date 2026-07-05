@@ -610,7 +610,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Column & Card
   // -----------------------------------------------------------------------
   renderColumn(boardEl, name, entries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry) {
-    const actualCols = Math.min(entries.length, columnsPerGroup);
+    const actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
     const colEl = boardEl.createDiv({ cls: "columns-column" });
     const gapTotal = (actualCols - 1) * 12;
     const paddingOverhead = 45;

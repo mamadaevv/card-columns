@@ -740,7 +740,10 @@ class ColumnsView extends BasesView {
     colIdx: number,
     isMasonry: boolean,
   ): void {
-    const actualCols = Math.min(entries.length, columnsPerGroup);
+    // Width math: an empty custom-list lane should look the same as a
+    // column with one card. Use Math.max(1, ...) so the drop target is
+    // the same width as a populated single-card column.
+    const actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
     const colEl = boardEl.createDiv({ cls: "columns-column" });
     const gapTotal = (actualCols - 1) * 12;
     const paddingOverhead = 45; // 24 column pad + 16 cards pad + 1 border-right + 4 safety
