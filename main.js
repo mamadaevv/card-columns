@@ -554,6 +554,11 @@ var ColumnsView = class extends import_obsidian.BasesView {
       setTimeout(restore, 50);
       setTimeout(restore, 200);
     }
+    const board = this.containerEl.querySelector(".columns-board");
+    if (board) {
+      const colHeights = Array.from(board.querySelectorAll(".columns-column")).map((c) => c.offsetHeight);
+      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
+    }
   }
   // -----------------------------------------------------------------------
   //  Filter bar

@@ -680,6 +680,14 @@ class ColumnsView extends BasesView {
       setTimeout(restore, 50);
       setTimeout(restore, 200);
     }
+
+    // Layout snapshot — helps diagnose vertical jump / re-render flicker
+    const board = this.containerEl.querySelector(".columns-board") as HTMLElement | null;
+    if (board) {
+      const colHeights = Array.from(board.querySelectorAll<HTMLElement>(".columns-column"))
+        .map((c) => c.offsetHeight);
+      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
+    }
   }
 
   // -----------------------------------------------------------------------
