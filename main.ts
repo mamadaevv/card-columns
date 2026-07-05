@@ -40,6 +40,7 @@ const CFG_FILTER_HEIGHT = "filterHeight";
 const CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 const CFG_ZEBRA_STRIPING = "zebraStriping";
 const CFG_MASONRY = "masonry";
+const CFG_DRAG_DROP = "dragDrop";
 
 // Cover settings
 const CFG_COVER_SOURCE = "coverSource";
@@ -79,6 +80,7 @@ class ColumnsView extends BasesView {
   andMode = false;
   splitLeafRight: WorkspaceLeaf | null = null;
   splitLeafDown: WorkspaceLeaf | null = null;
+  suppressNextClick = false;
 
   constructor(
     controller: QueryController,
@@ -161,6 +163,12 @@ class ColumnsView extends BasesView {
             type: "toggle",
             displayName: "Masonry layout (cards fill gaps vertically)",
             default: false,
+          },
+          {
+            key: CFG_DRAG_DROP,
+            type: "toggle",
+            displayName: "Drag & drop cards between columns",
+            default: true,
           },
         ],
       },
@@ -362,6 +370,65 @@ class ColumnsView extends BasesView {
     if (typeof raw === "string") return [raw];
     if (typeof raw === "number") return [String(raw)];
     return [];
+  }
+
+  /**
+   * Move a card from `oldValue` to `newValue` in the frontmatter property
+   * driving the column grouping. Both operations happen in a single
+   * `processFrontMatter` transaction:
+   *   1) remove `oldValue` from the property's value list (if present)
+   *   2) append `newValue` to the list ONLY if it isn't already there
+   * The value is stored as a scalar when it has exactly one entry, or as
+   * a YAML list when it has multiple — matching how Obsidian normally
+   * writes frontmatter and how `getColumnValues` reads it back.
+   */
+  private async moveCardToColumn(
+    filePath: string,
+    oldValue: string,
+    newValue: string,
+  ): Promise<void> {
+    // No-op when dropping a card into the same column it came from
+    if (oldValue === newValue) return;
+
+    const prop = this.getColumnProperty();
+    if (!prop) return;
+
+    const af = this.app.vault.getAbstractFileByPath(filePath);
+    if (!(af instanceof TFile)) return;
+    const file = af;
+
+    await this.app.fileManager.processFrontMatter(file, (fm) => {
+      const cur = fm[prop];
+
+      // Normalize current value into an array of strings
+      let arr: string[];
+      if (Array.isArray(cur)) {
+        arr = cur.filter((v): v is string => typeof v === "string");
+      } else if (cur === null || cur === undefined || cur === "") {
+        arr = [];
+      } else {
+        arr = [String(cur)];
+      }
+
+      // 1) Drop the old value (always — the user is moving the card)
+      if (oldValue) {
+        arr = arr.filter((v) => v !== oldValue);
+      }
+
+      // 2) Add the new value only if it isn't already there
+      if (newValue && !arr.includes(newValue)) {
+        arr.push(newValue);
+      }
+
+      // Persist: scalar when 1 entry, list when multiple
+      if (arr.length === 0) {
+        delete fm[prop];
+      } else if (arr.length === 1) {
+        fm[prop] = arr[0];
+      } else {
+        fm[prop] = arr;
+      }
+    });
   }
 
   /** Get visible properties from the Properties button. */
@@ -669,6 +736,38 @@ class ColumnsView extends BasesView {
     const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
     countSpan.textContent = String(entries.length);
 
+    // Drag & drop — wire up drop zone on the whole column
+    const dragDropEnabled = this.cfg<boolean>(CFG_DRAG_DROP, true);
+    if (dragDropEnabled) {
+      colEl.addEventListener("dragover", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        // Only accept our own drag type
+        if (Array.from(dt.types).indexOf("text/x-columns-file") < 0) return;
+        e.preventDefault();
+        dt.dropEffect = "move";
+        colEl.classList.add("is-drop-target");
+      });
+      colEl.addEventListener("dragleave", (e) => {
+        // dragleave fires when entering a child — only clear if leaving colEl entirely
+        if (!colEl.contains(e.relatedTarget as Node | null)) {
+          colEl.classList.remove("is-drop-target");
+        }
+      });
+      colEl.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        const filePath = dt.getData("text/x-columns-file");
+        const sourceCol = dt.getData("text/x-columns-source");
+        if (!filePath) return;
+        e.preventDefault();
+        colEl.classList.remove("is-drop-target");
+        // Suppress the click that browsers fire right after a successful drop
+        this.suppressNextClick = true;
+        void this.moveCardToColumn(filePath, sourceCol, name);
+      });
+    }
+
     let cardsEl: HTMLElement;
     if (columnsPerGroup > 1) {
       // Scroll wrapper keeps header outside the scroll container
@@ -687,7 +786,7 @@ class ColumnsView extends BasesView {
     }
 
     for (const entry of entries) {
-      this.renderCard(cardsEl, entry, visibleProps);
+      this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
     }
   }
 
@@ -695,11 +794,35 @@ class ColumnsView extends BasesView {
     cardsEl: HTMLElement,
     entry: BasesEntry,
     visibleProps: string[],
+    columnName: string,
+    dragDropEnabled: boolean,
   ): void {
     const file = entry.file;
     if (!(file instanceof TFile)) return;
 
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
+
+    // ── Drag & drop: make card draggable, set payload ───────────────
+    if (dragDropEnabled) {
+      cardEl.draggable = true;
+      cardEl.addEventListener("dragstart", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        dt.setData("text/x-columns-file", file.path);
+        dt.setData("text/x-columns-source", columnName);
+        dt.effectAllowed = "move";
+        // Custom drag image — the card itself, slightly faded
+        try {
+          dt.setDragImage(cardEl, 20, 20);
+        } catch {
+          /* some browsers reject setDragImage during certain drag flows */
+        }
+        cardEl.classList.add("is-dragging");
+      });
+      cardEl.addEventListener("dragend", () => {
+        cardEl.classList.remove("is-dragging");
+      });
+    }
 
     // ── Cover ────────────────────────────────────────────────────────
     const coverSource = this.cfg<string>(CFG_COVER_SOURCE, "none");
@@ -838,6 +961,12 @@ class ColumnsView extends BasesView {
     // Click events...
 
     cardEl.addEventListener("click", (e) => {
+      // Browsers fire a synthetic click right after a successful drop —
+      // skip it so the file doesn't open immediately after a drag-move.
+      if (this.suppressNextClick) {
+        this.suppressNextClick = false;
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+click — open in background
         const behavior = this.getOpenBehavior();
