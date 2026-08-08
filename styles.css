@@ -1,0 +1,518 @@
+/* ---------------------------------------------------------------------------
+  Columns view — main container
+  --------------------------------------------------------------------------- */
+
+.columns-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+  Filter bar
+  --------------------------------------------------------------------------- */
+
+.columns-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  position: relative;
+}
+
+.columns-filter-resize-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: row-resize;
+  z-index: 1;
+}
+
+.columns-mode-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-accent);
+  background: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.columns-mode-btn:hover {
+  background: var(--background-modifier-active);
+}
+
+.columns-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-muted);
+  background: var(--background-secondary-alt);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.columns-filter-pill:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.columns-filter-pill.is-active {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+/* ---------------------------------------------------------------------------
+  Board (scrollable horizontal area)
+  --------------------------------------------------------------------------- */
+
+.columns-board {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: stretch;
+  background: var(--background-secondary);
+}
+
+/* ---------------------------------------------------------------------------
+  Column
+  --------------------------------------------------------------------------- */
+
+.columns-column {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 180px;
+  max-width: 700px;
+  background: var(--background-secondary);
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-right: 1px solid var(--background-modifier-border);
+  height: 100%;
+  min-height: 0;
+  padding: 0 12px;
+}
+
+.columns-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  flex-shrink: 0;
+}
+
+.columns-column-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  background: var(--background-modifier-hover);
+  padding: 0 6px;
+  border-radius: 8px;
+  line-height: 20px;
+}
+
+.columns-column-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+  Cards scroll wrapper (multi-column) — keeps header outside scroll area
+  --------------------------------------------------------------------------- */
+
+.columns-cards-scroll {
+  flex: 1;
+  overflow-y: overlay;
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------------------
+  Card list (scrollable vertical area inside column — single column mode,
+  or grid inside scroll wrapper for multi-column)
+  --------------------------------------------------------------------------- */
+
+.columns-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 8px 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.columns-column.is-multi-column .columns-cards {
+  overflow-y: visible;
+  flex: none;
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: 12px;
+  padding: 0 8px 24px;
+}
+
+/* ---------------------------------------------------------------------------
+  Masonry — CSS columns instead of grid
+  --------------------------------------------------------------------------- */
+
+.columns-column.is-multi-column .columns-cards.is-masonry {
+  display: block;
+  grid-template-columns: none;
+}
+
+.columns-column.is-multi-column .columns-cards.is-masonry .columns-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 12px;
+}
+
+/* ---------------------------------------------------------------------------
+  Zebra striping
+  --------------------------------------------------------------------------- */
+
+.columns-column.is-zebra-even {
+  background: var(--background-modifier-hover);
+}
+
+/* ---------------------------------------------------------------------------
+  Card
+  --------------------------------------------------------------------------- */
+
+.columns-card {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  transition: box-shadow 0.1s, border-color 0.1s;
+  min-height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.columns-card:hover {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.columns-card:active {
+  background: var(--background-modifier-active);
+}
+
+/* ---------------------------------------------------------------------------
+  Card cover
+  --------------------------------------------------------------------------- */
+
+.columns-card-cover {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Borderless: bleed to card edges */
+.columns-card-cover.is-borderless {
+  margin-left: -10px;
+  margin-right: -10px;
+  border-radius: 0;
+}
+.columns-card-cover.is-borderless.is-above-title {
+  margin-top: -8px;
+  margin-bottom: 8px;
+  border-radius: 6px 6px 0 0;
+}
+.columns-card-cover.is-borderless.is-below-title {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 0;
+}
+.columns-card-cover.is-borderless.is-after-all {
+  margin-top: 8px;
+  margin-bottom: -8px;
+  border-radius: 0 0 6px 6px;
+}
+
+/* Bordered: inside card padding */
+.columns-card-cover.is-bordered {
+  border-radius: 6px;
+}
+.columns-card-cover.is-bordered.is-above-title {
+  margin: 0 0 8px;
+}
+.columns-card-cover.is-bordered.is-below-title {
+  margin: 8px 0;
+}
+.columns-card-cover.is-bordered.is-after-all {
+  margin: 8px 0 0;
+}
+
+.columns-card-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Auto aspect: image determines height, natural flow */
+.columns-card-cover.is-auto {
+  aspect-ratio: auto;
+}
+.columns-card-cover.is-auto .columns-card-cover-img {
+  height: auto;
+  min-height: 60px;
+}
+.columns-card-cover.is-auto.is-placeholder {
+  aspect-ratio: 4/3;
+}
+
+.columns-card-cover.is-placeholder {
+  background: var(--background-modifier-hover);
+}
+
+/* Cover as only element — fills the entire card */
+.columns-card.is-cover-only {
+  padding: 0;
+}
+.columns-card.is-cover-only > .columns-card-cover {
+  margin: 0;
+  border-radius: 6px;
+}
+.columns-card.is-cover-only .columns-card-cover-img {
+  height: 100%;
+}
+
+.columns-card-title {
+  font-size: var(--title-fs, 14px);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.columns-card-title.is-normal-weight {
+  font-weight: 400;
+}
+
+.columns-card-title.is-wrap {
+  white-space: normal;
+  text-overflow: clip;
+  overflow: visible;
+}
+
+.columns-card-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Grid layout: chips flow inline */
+.columns-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: var(--chip-fs);
+}
+
+.columns-chips.is-clip .columns-chip-text,
+.columns-chips.is-clip .columns-chip-boolean,
+.columns-chips.is-clip .columns-chip-link,
+.columns-chips.is-clip .columns-chip-tag,
+.columns-chips.is-clip .columns-chip-list-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.columns-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-width: 0;
+  font-size: var(--chip-fs);
+}
+
+.columns-chips-grid.is-clip .columns-chip-text,
+.columns-chips-grid.is-clip .columns-chip-boolean,
+.columns-chips-grid.is-clip .columns-chip-link,
+.columns-chips-grid.is-clip .columns-chip-tag {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.columns-chips-grid .columns-card-chip {
+  flex: 0 1 auto;
+  gap: 2px;
+  margin-top: 0;
+  min-width: 0;
+  max-width: 100%;
+  width: fit-content;
+}
+
+.columns-card-chip-label {
+  font-weight: 400;
+  color: var(--text-faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: calc(var(--chip-fs) - 2px);
+}
+
+.columns-chip-text,
+.columns-chip-boolean {
+  font-size: var(--chip-fs);
+  color: var(--text-normal);
+  line-height: 1.4;
+}
+
+.columns-chip-boolean {
+  display: inline-flex;
+  align-items: center;
+}
+
+.columns-chip-link {
+  font-size: var(--chip-fs);
+  color: var(--link-color);
+  text-decoration: underline;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.columns-chip-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.columns-chip-link-block {
+  display: block;
+  font-size: var(--chip-fs);
+  color: var(--link-color);
+  text-decoration: underline;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.columns-chip-tag {
+  display: inline-block;
+  font-size: var(--chip-fs);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--tag-background);
+  color: var(--tag-color);
+  align-self: flex-start;
+}
+
+.columns-chip-list-item {
+  display: inline-block;
+  font-size: var(--chip-fs);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  align-self: flex-start;
+}
+
+.columns-chip-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+  Empty state
+  --------------------------------------------------------------------------- */
+
+.columns-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------------
+  Modal (file preview)
+  --------------------------------------------------------------------------- */
+
+.columns-modal-content {
+  padding: 0;
+  user-select: text;
+}
+
+.columns-modal-img {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+.columns-modal-content h2 {
+  padding: 16px 20px 0;
+  margin: 0;
+}
+
+.columns-modal-body {
+  padding: 12px 20px 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.columns-modal-content .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 20px 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* ── Drag & drop ─────────────────────────────────────────────── */
+.columns-card[draggable="true"] {
+  cursor: grab;
+}
+.columns-card[draggable="true"]:hover {
+  cursor: grab;
+}
+.columns-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.columns-card.is-dragging {
+  /* The source card just fades — no lift, no shadow, no accent border. */
+  opacity: 0.25;
+  cursor: grabbing;
+  transition: opacity 0.12s ease;
+}
+
+.columns-column.is-drop-target {
+  /* No visual treatment on the column itself — the dragging card already
+     provides enough feedback about where it will land. */
+}
+
+.columns-column.is-drop-target .columns-column-header {
+  /* Intentionally left empty — column stays neutral during drag. */
+}
+

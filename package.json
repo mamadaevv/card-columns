@@ -1,0 +1,14 @@
+{
+  "name": "obsidian-columns",
+  "version": "0.2.0",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild main.ts --bundle --external:obsidian --format=cjs --platform=node --target=ES2021 --outfile=main.js"
+  },
+  "devDependencies": {
+    "obsidian": "latest",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.0"
+  }
+}
