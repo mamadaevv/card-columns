@@ -508,11 +508,18 @@
 }
 
 .columns-column.is-drop-target {
-  /* No visual treatment on the column itself — the dragging card already
-     provides enough feedback about where it will land. */
+  /* Diffuse inner glow of the accent color while a card hovers above.
+     Two stacked inset shadows: a thin accent bar on the left edge plus a
+     soft blurred wash across the whole column. color-mix keeps the alpha
+     without a hard layout shift (no real border added). */
+  box-shadow:
+    inset 3px 0 0 0 var(--interactive-accent),
+    inset 0 0 32px -6px color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+  transition: box-shadow 0.15s ease;
 }
 
 .columns-column.is-drop-target .columns-column-header {
-  /* Intentionally left empty — column stays neutral during drag. */
+  color: var(--interactive-accent);
+  transition: color 0.15s ease;
 }
 
