@@ -40,6 +40,8 @@ const CFG_FILTER_HEIGHT = "filterHeight";
 const CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 const CFG_ZEBRA_STRIPING = "zebraStriping";
 const CFG_MASONRY = "masonry";
+const CFG_DRAG_DROP = "dragDrop";
+const CFG_COLUMN_ORDER = "columnOrder";
 
 // Cover settings
 const CFG_COVER_SOURCE = "coverSource";
@@ -79,6 +81,11 @@ class ColumnsView extends BasesView {
   andMode = false;
   splitLeafRight: WorkspaceLeaf | null = null;
   splitLeafDown: WorkspaceLeaf | null = null;
+  suppressNextClick = false;
+  /** Scroll position to restore after the next render. Set by drag & drop
+   *  so a re-render triggered by processFrontMatter doesn't snap the
+   *  board back to scrollLeft=0. */
+  pendingScrollLeft: number | null = null;
 
   constructor(
     controller: QueryController,
@@ -92,6 +99,21 @@ class ColumnsView extends BasesView {
   }
 
   onload(): void {
+    // Release the saved scroll position as soon as the user scrolls
+    // manually — otherwise the first scroll input would be cancelled by
+    // a stale restoration. Bound once to scrollEl (not to cards), so the
+    // listener survives every render() rebuild of the inner DOM.
+    const release = () => {
+      this.pendingScrollLeft = null;
+    };
+    this.scrollEl.addEventListener("wheel", release, { passive: true });
+    this.scrollEl.addEventListener("pointerdown", release);
+    this.scrollEl.addEventListener("touchstart", release, { passive: true });
+    this.scrollEl.addEventListener("keydown", (e) => {
+      // Arrow / Page keys scroll the view — treat as user scroll input
+      if (["ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]
+        .includes(e.key)) release();
+    });
     this.render();
   }
 
@@ -161,6 +183,19 @@ class ColumnsView extends BasesView {
             type: "toggle",
             displayName: "Masonry layout (cards fill gaps vertically)",
             default: false,
+          },
+          {
+            key: CFG_DRAG_DROP,
+            type: "toggle",
+            displayName: "Drag & drop cards between columns",
+            default: true,
+          },
+          {
+            key: CFG_COLUMN_ORDER,
+            type: "text",
+            displayName: "Column list (comma-separated, leave empty for auto)",
+            placeholder: "Todo, InProgress, Done",
+            default: "",
           },
         ],
       },
@@ -364,6 +399,65 @@ class ColumnsView extends BasesView {
     return [];
   }
 
+  /**
+   * Move a card from `oldValue` to `newValue` in the frontmatter property
+   * driving the column grouping. Both operations happen in a single
+   * `processFrontMatter` transaction:
+   *   1) remove `oldValue` from the property's value list (if present)
+   *   2) append `newValue` to the list ONLY if it isn't already there
+   * The value is stored as a scalar when it has exactly one entry, or as
+   * a YAML list when it has multiple — matching how Obsidian normally
+   * writes frontmatter and how `getColumnValues` reads it back.
+   */
+  private async moveCardToColumn(
+    filePath: string,
+    oldValue: string,
+    newValue: string,
+  ): Promise<void> {
+    // No-op when dropping a card into the same column it came from
+    if (oldValue === newValue) return;
+
+    const prop = this.getColumnProperty();
+    if (!prop) return;
+
+    const af = this.app.vault.getAbstractFileByPath(filePath);
+    if (!(af instanceof TFile)) return;
+    const file = af;
+
+    await this.app.fileManager.processFrontMatter(file, (fm) => {
+      const cur = fm[prop];
+
+      // Normalize current value into an array of strings
+      let arr: string[];
+      if (Array.isArray(cur)) {
+        arr = cur.filter((v): v is string => typeof v === "string");
+      } else if (cur === null || cur === undefined || cur === "") {
+        arr = [];
+      } else {
+        arr = [String(cur)];
+      }
+
+      // 1) Drop the old value (always — the user is moving the card)
+      if (oldValue) {
+        arr = arr.filter((v) => v !== oldValue);
+      }
+
+      // 2) Add the new value only if it isn't already there
+      if (newValue && !arr.includes(newValue)) {
+        arr.push(newValue);
+      }
+
+      // Persist: scalar when 1 entry, list when multiple
+      if (arr.length === 0) {
+        delete fm[prop];
+      } else if (arr.length === 1) {
+        fm[prop] = arr[0];
+      } else {
+        fm[prop] = arr;
+      }
+    });
+  }
+
   /** Get visible properties from the Properties button. */
   private getVisiblePropertyIds(): string[] {
     const props = this.config?.getOrder() ?? [];
@@ -410,7 +504,7 @@ class ColumnsView extends BasesView {
     } else if (src === "property") {
       const raw = cache.frontmatter?.cover;
       if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim();
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
 
@@ -437,6 +531,21 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
+    // Snapshot the current scroll position of the .columns-board before
+    // we tear it down. scrollEl is NOT the scrolling element — the
+    // .columns-board inside it is (display: flex, overflow-x: auto).
+    // Capturing scrollEl.scrollLeft always returned 0 because nothing
+    // actually scrolls there.
+    const oldBoard = this.containerEl.querySelector<HTMLElement>(".columns-board");
+    const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
+    const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
+    const beforeClientWidth = oldBoard?.clientWidth ?? 0;
+    console.log(
+      "[columns] render() before, scrollLeft =", beforeScrollLeft,
+      "scrollWidth =", beforeScrollWidth,
+      "clientWidth =", beforeClientWidth,
+    );
+
     this.containerEl.empty();
 
     const entries = this.data?.data ?? [];
@@ -502,11 +611,28 @@ class ColumnsView extends BasesView {
     this.renderFilterBar(columnMap);
 
     // Build column display list — only show columns matching selected tags
-    let colNames = Array.from(columnMap.keys()).sort();
+    let colNames: string[];
+
+    // Custom column list (comma-separated) — when set, fixes the set and
+    // the order of columns. Empty columns are rendered so the user has
+    // a stable kanban-style board layout.
+    const customRaw = this.cfg<string>(CFG_COLUMN_ORDER, "").trim();
+    if (customRaw) {
+      colNames = customRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      // De-duplicate while preserving the user's order
+      colNames = Array.from(new Set(colNames));
+    } else {
+      colNames = Array.from(columnMap.keys()).sort();
+    }
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
-    if (noValueEntries.length > 0) colNames.push("(No value)");
+    if (noValueEntries.length > 0 && !colNames.includes("(No value)")) {
+      colNames.push("(No value)");
+    }
 
     const cardWidth = this.getCardWidth();
     const visibleProps = this.getVisiblePropertyIds();
@@ -514,6 +640,7 @@ class ColumnsView extends BasesView {
     const isZebra = this.cfg<boolean>(CFG_ZEBRA_STRIPING, false);
     const isMasonry = this.cfg<boolean>(CFG_MASONRY, false);
 
+    const isCustomList = !!customRaw;
     for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
       const colName = colNames[colIdx];
       let colEntries: BasesEntry[];
@@ -524,7 +651,7 @@ class ColumnsView extends BasesView {
           (e) => e.file?.path && filteredPaths.includes(e.file.path),
         );
       } else {
-        const raw = columnMap.get(colName)!;
+        const raw = columnMap.get(colName) ?? [];
         const paths = raw.map((e) => e.file?.path ?? "");
         const filteredPaths = applyFilters(paths);
         colEntries = raw.filter(
@@ -534,9 +661,52 @@ class ColumnsView extends BasesView {
 
       const columnsPerGroup = this.cfg<number>(CFG_COLUMNS_PER_GROUP, 1);
 
-      if (colEntries.length === 0) continue;
+      // Hide empty columns only in auto mode. In custom mode, an empty
+      // column from the user's list is a valid kanban lane.
+      if (colEntries.length === 0 && !isCustomList) continue;
 
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
+    }
+
+    // Restore the scroll position we captured at the top of render().
+    // requestAnimationFrame ensures the new board is laid out — without it
+    // the browser clamps scrollLeft to the (still-zero) scrollWidth and
+    // Restore the scroll position we captured at the top of render().
+    // Use proportional scroll (ratio) so a board that grew or shrank
+    // after the rebuild keeps the user looking at the same area
+    // instead of snapping to 0 or to the absolute old position.
+    const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
+    const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
+    console.log("[columns] restore plan: ratio =", ratio);
+
+    if (beforeScrollLeft > 0 && ratio > 0) {
+      const restore = () => {
+        const newBoard = this.containerEl.querySelector<HTMLElement>(".columns-board");
+        if (!newBoard) return;
+        const newScrollWidth = newBoard.scrollWidth;
+        const newClientWidth = newBoard.clientWidth;
+        const newMax = Math.max(0, newScrollWidth - newClientWidth);
+        const target = Math.round(ratio * newMax);
+        const was = newBoard.scrollLeft;
+        newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
+        console.log(
+          "[columns] restore(): was =", was,
+          "→", newBoard.scrollLeft,
+          "newMax =", newMax,
+          "(newScrollWidth =", newScrollWidth, "newClientWidth =", newClientWidth, ")",
+        );
+      };
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+      setTimeout(restore, 50);
+      setTimeout(restore, 200);
+    }
+
+    // Layout snapshot — helps diagnose vertical jump / re-render flicker
+    const board = this.containerEl.querySelector(".columns-board") as HTMLElement | null;
+    if (board) {
+      const colHeights = Array.from(board.querySelectorAll<HTMLElement>(".columns-column"))
+        .map((c) => c.offsetHeight);
+      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
     }
   }
 
@@ -645,7 +815,10 @@ class ColumnsView extends BasesView {
     colIdx: number,
     isMasonry: boolean,
   ): void {
-    const actualCols = Math.min(entries.length, columnsPerGroup);
+    // Width math: an empty custom-list lane should look the same as a
+    // column with one card. Use Math.max(1, ...) so the drop target is
+    // the same width as a populated single-card column.
+    const actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
     const colEl = boardEl.createDiv({ cls: "columns-column" });
     const gapTotal = (actualCols - 1) * 12;
     const paddingOverhead = 45; // 24 column pad + 16 cards pad + 1 border-right + 4 safety
@@ -669,6 +842,44 @@ class ColumnsView extends BasesView {
     const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
     countSpan.textContent = String(entries.length);
 
+    // Drag & drop — wire up drop zone on the whole column
+    const dragDropEnabled = this.cfg<boolean>(CFG_DRAG_DROP, true);
+    if (dragDropEnabled) {
+      colEl.addEventListener("dragover", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        // Only accept our own drag type
+        if (Array.from(dt.types).indexOf("text/x-columns-file") < 0) return;
+        e.preventDefault();
+        dt.dropEffect = "move";
+        colEl.classList.add("is-drop-target");
+      });
+      colEl.addEventListener("dragleave", (e) => {
+        // dragleave fires when entering a child — only clear if leaving colEl entirely
+        if (!colEl.contains(e.relatedTarget as Node | null)) {
+          colEl.classList.remove("is-drop-target");
+        }
+      });
+      colEl.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        const filePath = dt.getData("text/x-columns-file");
+        const sourceCol = dt.getData("text/x-columns-source");
+        if (!filePath) return;
+        e.preventDefault();
+        colEl.classList.remove("is-drop-target");
+        // Suppress the click that browsers fire right after a successful drop
+        this.suppressNextClick = true;
+        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
+        // Remember the scroll position NOW. processFrontMatter triggers
+        // metadataCache → onDataUpdated → render() which rebuilds the
+        // board from scratch. Without this snapshot the new board resets
+        // to scrollLeft=0 and the view snaps back to the left edge.
+        this.pendingScrollLeft = this.scrollEl.scrollLeft;
+        void this.moveCardToColumn(filePath, sourceCol, name);
+      });
+    }
+
     let cardsEl: HTMLElement;
     if (columnsPerGroup > 1) {
       // Scroll wrapper keeps header outside the scroll container
@@ -687,7 +898,7 @@ class ColumnsView extends BasesView {
     }
 
     for (const entry of entries) {
-      this.renderCard(cardsEl, entry, visibleProps);
+      this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
     }
   }
 
@@ -695,11 +906,35 @@ class ColumnsView extends BasesView {
     cardsEl: HTMLElement,
     entry: BasesEntry,
     visibleProps: string[],
+    columnName: string,
+    dragDropEnabled: boolean,
   ): void {
     const file = entry.file;
     if (!(file instanceof TFile)) return;
 
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
+
+    // ── Drag & drop: make card draggable, set payload ───────────────
+    if (dragDropEnabled) {
+      cardEl.draggable = true;
+      cardEl.addEventListener("dragstart", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        dt.setData("text/x-columns-file", file.path);
+        dt.setData("text/x-columns-source", columnName);
+        dt.effectAllowed = "move";
+        // Custom drag image — the card itself, slightly faded
+        try {
+          dt.setDragImage(cardEl, 20, 20);
+        } catch {
+          /* some browsers reject setDragImage during certain drag flows */
+        }
+        cardEl.classList.add("is-dragging");
+      });
+      cardEl.addEventListener("dragend", () => {
+        cardEl.classList.remove("is-dragging");
+      });
+    }
 
     // ── Cover ────────────────────────────────────────────────────────
     const coverSource = this.cfg<string>(CFG_COVER_SOURCE, "none");
@@ -838,6 +1073,12 @@ class ColumnsView extends BasesView {
     // Click events...
 
     cardEl.addEventListener("click", (e) => {
+      // Browsers fire a synthetic click right after a successful drop —
+      // skip it so the file doesn't open immediately after a drag-move.
+      if (this.suppressNextClick) {
+        this.suppressNextClick = false;
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+click — open in background
         const behavior = this.getOpenBehavior();

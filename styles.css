@@ -489,3 +489,36 @@
   border-top: 1px solid var(--background-modifier-border);
 }
 
+/* ── Drag & drop ─────────────────────────────────────────────── */
+.columns-card[draggable="true"] {
+  cursor: grab;
+}
+.columns-card[draggable="true"]:hover {
+  cursor: grab;
+}
+.columns-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.columns-card.is-dragging {
+  /* The source card just fades — no lift, no shadow, no accent border. */
+  opacity: 0.25;
+  cursor: grabbing;
+  transition: opacity 0.12s ease;
+}
+
+.columns-column.is-drop-target {
+  /* Thin accent outline around the column + a faint, diffuse inner glow.
+     Both are inset box-shadows so they never cause a layout shift and
+     are not clipped by the board's overflow. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 50%, transparent),
+    inset 0 0 30px -8px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+  transition: box-shadow 0.15s ease;
+}
+
+.columns-column.is-drop-target .columns-column-header {
+  color: var(--interactive-accent);
+  transition: color 0.15s ease;
+}
+

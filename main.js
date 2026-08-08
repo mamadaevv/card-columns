@@ -39,6 +39,8 @@ var CFG_FILTER_HEIGHT = "filterHeight";
 var CFG_COLUMNS_PER_GROUP = "columnsPerGroup";
 var CFG_ZEBRA_STRIPING = "zebraStriping";
 var CFG_MASONRY = "masonry";
+var CFG_DRAG_DROP = "dragDrop";
+var CFG_COLUMN_ORDER = "columnOrder";
 var CFG_COVER_SOURCE = "coverSource";
 var CFG_COVER_STYLE = "coverStyle";
 var CFG_COVER_ASPECT = "coverAspect";
@@ -63,11 +65,25 @@ var ColumnsView = class extends import_obsidian.BasesView {
     this.andMode = false;
     this.splitLeafRight = null;
     this.splitLeafDown = null;
+    this.suppressNextClick = false;
+    /** Scroll position to restore after the next render. Set by drag & drop
+     *  so a re-render triggered by processFrontMatter doesn't snap the
+     *  board back to scrollLeft=0. */
+    this.pendingScrollLeft = null;
     this.scrollEl = scrollEl;
     this.plugin = plugin;
     this.containerEl = scrollEl.createDiv({ cls: "columns-container" });
   }
   onload() {
+    const release = () => {
+      this.pendingScrollLeft = null;
+    };
+    this.scrollEl.addEventListener("wheel", release, { passive: true });
+    this.scrollEl.addEventListener("pointerdown", release);
+    this.scrollEl.addEventListener("touchstart", release, { passive: true });
+    this.scrollEl.addEventListener("keydown", (e) => {
+      if (["ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"].includes(e.key)) release();
+    });
     this.render();
   }
   onunload() {
@@ -132,6 +148,19 @@ var ColumnsView = class extends import_obsidian.BasesView {
             type: "toggle",
             displayName: "Masonry layout (cards fill gaps vertically)",
             default: false
+          },
+          {
+            key: CFG_DRAG_DROP,
+            type: "toggle",
+            displayName: "Drag & drop cards between columns",
+            default: true
+          },
+          {
+            key: CFG_COLUMN_ORDER,
+            type: "text",
+            displayName: "Column list (comma-separated, leave empty for auto)",
+            placeholder: "Todo, InProgress, Done",
+            default: ""
           }
         ]
       },
@@ -325,6 +354,48 @@ var ColumnsView = class extends import_obsidian.BasesView {
     if (typeof raw === "number") return [String(raw)];
     return [];
   }
+  /**
+   * Move a card from `oldValue` to `newValue` in the frontmatter property
+   * driving the column grouping. Both operations happen in a single
+   * `processFrontMatter` transaction:
+   *   1) remove `oldValue` from the property's value list (if present)
+   *   2) append `newValue` to the list ONLY if it isn't already there
+   * The value is stored as a scalar when it has exactly one entry, or as
+   * a YAML list when it has multiple — matching how Obsidian normally
+   * writes frontmatter and how `getColumnValues` reads it back.
+   */
+  async moveCardToColumn(filePath, oldValue, newValue) {
+    if (oldValue === newValue) return;
+    const prop = this.getColumnProperty();
+    if (!prop) return;
+    const af = this.app.vault.getAbstractFileByPath(filePath);
+    if (!(af instanceof import_obsidian.TFile)) return;
+    const file = af;
+    await this.app.fileManager.processFrontMatter(file, (fm) => {
+      const cur = fm[prop];
+      let arr;
+      if (Array.isArray(cur)) {
+        arr = cur.filter((v) => typeof v === "string");
+      } else if (cur === null || cur === void 0 || cur === "") {
+        arr = [];
+      } else {
+        arr = [String(cur)];
+      }
+      if (oldValue) {
+        arr = arr.filter((v) => v !== oldValue);
+      }
+      if (newValue && !arr.includes(newValue)) {
+        arr.push(newValue);
+      }
+      if (arr.length === 0) {
+        delete fm[prop];
+      } else if (arr.length === 1) {
+        fm[prop] = arr[0];
+      } else {
+        fm[prop] = arr;
+      }
+    });
+  }
   /** Get visible properties from the Properties button. */
   getVisiblePropertyIds() {
     const props = this.config?.getOrder() ?? [];
@@ -362,7 +433,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     } else if (src === "property") {
       const raw = cache.frontmatter?.cover;
       if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim();
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
     if (!coverPath) return null;
@@ -380,6 +451,18 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
+    const oldBoard = this.containerEl.querySelector(".columns-board");
+    const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
+    const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
+    const beforeClientWidth = oldBoard?.clientWidth ?? 0;
+    console.log(
+      "[columns] render() before, scrollLeft =",
+      beforeScrollLeft,
+      "scrollWidth =",
+      beforeScrollWidth,
+      "clientWidth =",
+      beforeClientWidth
+    );
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -429,16 +512,26 @@ var ColumnsView = class extends import_obsidian.BasesView {
       );
     };
     this.renderFilterBar(columnMap);
-    let colNames = Array.from(columnMap.keys()).sort();
+    let colNames;
+    const customRaw = this.cfg(CFG_COLUMN_ORDER, "").trim();
+    if (customRaw) {
+      colNames = customRaw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+      colNames = Array.from(new Set(colNames));
+    } else {
+      colNames = Array.from(columnMap.keys()).sort();
+    }
     if (this.activeFilters.size > 0) {
       colNames = colNames.filter((name) => this.activeFilters.has(name));
     }
-    if (noValueEntries.length > 0) colNames.push("(No value)");
+    if (noValueEntries.length > 0 && !colNames.includes("(No value)")) {
+      colNames.push("(No value)");
+    }
     const cardWidth = this.getCardWidth();
     const visibleProps = this.getVisiblePropertyIds();
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
     const isZebra = this.cfg(CFG_ZEBRA_STRIPING, false);
     const isMasonry = this.cfg(CFG_MASONRY, false);
+    const isCustomList = !!customRaw;
     for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
       const colName = colNames[colIdx];
       let colEntries;
@@ -449,7 +542,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
           (e) => e.file?.path && filteredPaths.includes(e.file.path)
         );
       } else {
-        const raw = columnMap.get(colName);
+        const raw = columnMap.get(colName) ?? [];
         const paths = raw.map((e) => e.file?.path ?? "");
         const filteredPaths = applyFilters(paths);
         colEntries = raw.filter(
@@ -457,8 +550,44 @@ var ColumnsView = class extends import_obsidian.BasesView {
         );
       }
       const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
-      if (colEntries.length === 0) continue;
+      if (colEntries.length === 0 && !isCustomList) continue;
       this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
+    }
+    const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
+    const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
+    console.log("[columns] restore plan: ratio =", ratio);
+    if (beforeScrollLeft > 0 && ratio > 0) {
+      const restore = () => {
+        const newBoard = this.containerEl.querySelector(".columns-board");
+        if (!newBoard) return;
+        const newScrollWidth = newBoard.scrollWidth;
+        const newClientWidth = newBoard.clientWidth;
+        const newMax = Math.max(0, newScrollWidth - newClientWidth);
+        const target = Math.round(ratio * newMax);
+        const was = newBoard.scrollLeft;
+        newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
+        console.log(
+          "[columns] restore(): was =",
+          was,
+          "\u2192",
+          newBoard.scrollLeft,
+          "newMax =",
+          newMax,
+          "(newScrollWidth =",
+          newScrollWidth,
+          "newClientWidth =",
+          newClientWidth,
+          ")"
+        );
+      };
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+      setTimeout(restore, 50);
+      setTimeout(restore, 200);
+    }
+    const board = this.containerEl.querySelector(".columns-board");
+    if (board) {
+      const colHeights = Array.from(board.querySelectorAll(".columns-column")).map((c) => c.offsetHeight);
+      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
     }
   }
   // -----------------------------------------------------------------------
@@ -542,7 +671,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Column & Card
   // -----------------------------------------------------------------------
   renderColumn(boardEl, name, entries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry) {
-    const actualCols = Math.min(entries.length, columnsPerGroup);
+    const actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
     const colEl = boardEl.createDiv({ cls: "columns-column" });
     const gapTotal = (actualCols - 1) * 12;
     const paddingOverhead = 45;
@@ -563,6 +692,35 @@ var ColumnsView = class extends import_obsidian.BasesView {
     titleSpan.textContent = name;
     const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
     countSpan.textContent = String(entries.length);
+    const dragDropEnabled = this.cfg(CFG_DRAG_DROP, true);
+    if (dragDropEnabled) {
+      colEl.addEventListener("dragover", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        if (Array.from(dt.types).indexOf("text/x-columns-file") < 0) return;
+        e.preventDefault();
+        dt.dropEffect = "move";
+        colEl.classList.add("is-drop-target");
+      });
+      colEl.addEventListener("dragleave", (e) => {
+        if (!colEl.contains(e.relatedTarget)) {
+          colEl.classList.remove("is-drop-target");
+        }
+      });
+      colEl.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        const filePath = dt.getData("text/x-columns-file");
+        const sourceCol = dt.getData("text/x-columns-source");
+        if (!filePath) return;
+        e.preventDefault();
+        colEl.classList.remove("is-drop-target");
+        this.suppressNextClick = true;
+        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
+        this.pendingScrollLeft = this.scrollEl.scrollLeft;
+        void this.moveCardToColumn(filePath, sourceCol, name);
+      });
+    }
     let cardsEl;
     if (columnsPerGroup > 1) {
       const scrollWrapper = colEl.createDiv({ cls: "columns-cards-scroll" });
@@ -579,13 +737,31 @@ var ColumnsView = class extends import_obsidian.BasesView {
       cardsEl = colEl.createDiv({ cls: "columns-cards" });
     }
     for (const entry of entries) {
-      this.renderCard(cardsEl, entry, visibleProps);
+      this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
     }
   }
-  renderCard(cardsEl, entry, visibleProps) {
+  renderCard(cardsEl, entry, visibleProps, columnName, dragDropEnabled) {
     const file = entry.file;
     if (!(file instanceof import_obsidian.TFile)) return;
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
+    if (dragDropEnabled) {
+      cardEl.draggable = true;
+      cardEl.addEventListener("dragstart", (e) => {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        dt.setData("text/x-columns-file", file.path);
+        dt.setData("text/x-columns-source", columnName);
+        dt.effectAllowed = "move";
+        try {
+          dt.setDragImage(cardEl, 20, 20);
+        } catch {
+        }
+        cardEl.classList.add("is-dragging");
+      });
+      cardEl.addEventListener("dragend", () => {
+        cardEl.classList.remove("is-dragging");
+      });
+    }
     const coverSource = this.cfg(CFG_COVER_SOURCE, "none");
     const hasCover = coverSource !== "none";
     let coverEl = null;
@@ -697,6 +873,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
     }
     cardEl.addEventListener("click", (e) => {
+      if (this.suppressNextClick) {
+        this.suppressNextClick = false;
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         const behavior = this.getOpenBehavior();
         if (behavior === "split-right" || behavior === "split-down") {
