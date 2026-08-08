@@ -508,11 +508,12 @@
 }
 
 .columns-column.is-drop-target {
-  /* Diffuse inner glow of the accent color while a card hovers above.
-     A single soft blurred inset wash across the whole column — no hard
-     edge. color-mix keeps the alpha without a layout shift. */
+  /* Thin accent outline around the column + a faint, diffuse inner glow.
+     Both are inset box-shadows so they never cause a layout shift and
+     are not clipped by the board's overflow. */
   box-shadow:
-    inset 0 0 40px -8px color-mix(in srgb, var(--interactive-accent) 50%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 50%, transparent),
+    inset 0 0 24px -10px color-mix(in srgb, var(--interactive-accent) 18%, transparent);
   transition: box-shadow 0.15s ease;
 }
 
