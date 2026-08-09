@@ -1,103 +1,130 @@
-# Columns
+# Card Columns
 
-A kanban-style card view for Obsidian. Group notes by tags or any frontmatter property into columns, with tag filtering, property chips, card covers, and split‑pane preview.
+A [Bases](https://help.obsidian.md/bases) view that lays notes out as **cards grouped into columns** — like a Kanban board, driven entirely by your frontmatter. Group by any property (status, assignee, tags…), drag cards between columns to update that property, filter by column values, and show cover images + property chips.
 
-## Demo
-
-<!-- Video 1: Overview -->
-**1. Overview**
-
-![Overview](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/overview.webp)
-
-<!-- Video 2: Setup & Configuration -->
-**2. Creating and configuring a view**
-
-[![View configure general](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20general.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20general.gif)
-
-[![View configure title](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20title.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20title.gif)
-
-[![View configure properties](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20properties.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/view%20configure%20properties.gif)
-
-<!-- Video 3: Filtering -->
-**3. Tag filtering & column navigation**
-
-[![Filter use](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/filter%20use.gif)](https://raw.githubusercontent.com/mamadaevv/card-columns/main/images/filter%20use.gif)
+![Card Columns board example — cards grouped into Todo / In Progress / Done columns with a card being dragged and the drop-target column glowing with an accent outline](images/board-example.png)
 
 ## Features
 
-- **Column grouping** — group by `tags`, `status`, `category` or any frontmatter property
-- **Card covers** — display cover images from note embeds or frontmatter property; full control over aspect ratio, style, fit, and position
-- **Multi-column groups** — display multiple cards per column in a grid layout (1–6 columns, configurable)
-- **Masonry layout** — alternative card arrangement where cards fill gaps vertically (CSS columns-based, toggle in settings)
-- **Zebra striping** — alternate column backgrounds for easier visual scanning (toggle in settings)
-- **Split‑pane preview** — open cards in a right or bottom split pane; LMB reuses the pane, Ctrl+LMB opens a new tab
-- **Tag filtering** — click tags to AND/OR filter across columns; Ctrl+Click toggles a single tag
-- **Property chips** — view note properties as styled chips (text, tags, links, booleans, dates)
-- **Date formatting** — Moment.js format and locale support
-- **Grid/Stack layout** — compact inline properties or structured vertical layout
-- **Native integration** — uses Obsidian BasesView framework (Sort, Filter, Properties, Search toolbar)
+- **Column grouping** — notes are bucketed into columns by the value of a chosen property (defaults to `tags`). One note can appear in multiple columns when the property holds a list of values.
+- **Custom column order** — fix the set and order of columns with a comma-separated list (`Todo, In Progress, Done`). Empty columns stay visible as stable Kanban lanes.
+- **Drag & drop** — drag a card to another column and the plugin rewrites the underlying frontmatter property: it removes the old value and appends the new one (deduped). A single transaction, no plugins or templating required.
+  - While dragging, the target column lights up with a thin accent outline + soft inner glow.
+  - ![Drag & drop in action — a card hovering over the "Done" column, which shows a faint accent outline and glow](images/drag-drop.gif)
+- **Filter bar** — click column values (tags) to filter. Toggle between **AND** and **OR** match modes. Resize the bar by dragging its bottom edge.
+- **Cover images** — pick a cover from the first image in the note, a dedicated `cover` property, or the note itself when it is an image. Control aspect ratio, orientation, fit, and position (above title / below title / after all properties).
+- **Property chips** — every visible property renders as a chip, typed by Obsidian value type:
+  - `BooleanValue` → check / square icon
+  - `DateValue` → relative ("2 days ago") or custom format + locale
+  - `LinkValue` → clickable internal link
+  - `ListValue` (tags / arrays) → pill row
+  - URLs → external links; `file.backlinks` / `embeds` / `outlinks` → clickable link lists
+- **Open behaviors** — click a card to open it as: active pane, floating modal (renders Markdown live, navigates internal links in-place), new tab, split right, or split down. `Ctrl`/`Cmd`+click opens in the background.
+- **Layout options** — card width, columns per group, zebra striping, and masonry (vertical gap-filling) layout.
+- **Scroll position preserved** — after a drag-and-drop rebuild the board restores the viewed area proportionally, so it doesn't snap back to the left edge.
 
-## Usage
+## Requirements
 
-1. Create a new `.base` file (or open an existing database)
-2. Click the view switcher and select **Columns**
-3. Click **Group by** in the toolbar → choose a property (e.g. `tags`, `status`) → notes are grouped into columns
-4. Filter by clicking tag pills below the toolbar:
-   - **Left-click** on a tag → show only notes with that tag (clears other filters)
-   - **Left-click another tag** → show notes matching ANY selected tag (OR mode)
-   - **Ctrl+Click** or **Right-click** on a tag → toggle that tag without clearing others
-   - Click the **OR/AND** button → switch between OR and AND mode for multiple tags
-   - Click **All** → clear all filters
-5. **Open a card** — mode depends on the gear‑menu setting:
-   - **Active pane** — opens in the current leaf
-   - **Floating modal** — preview in a pop‑up (default)
-   - **New tab** — opens in a new tab
-   - **Split right / Split down** — opens in a split pane:
-     - **Left-click** → replaces the file in the existing split pane
-     - **Ctrl+Click** → opens a new tab inside the split pane
-6. Open the **gear menu** (⚙) to configure appearance: title style, property chips, date format, layout
-
-## Settings (gear menu)
-
-### General
-- Open card in (active pane / floating modal / new tab / split right / split down)
-- Card width (px)
-- Columns per group (1–6)
-- Zebra striping (toggle)
-- Masonry layout (toggle)
-
-### Title
-- Wrap card titles
-- Bold card titles
-- Font size (px)
-
-### Properties
-- Layout (Stack / Grid)
-- Wrap multi-line values
-- Font size (px)
-- Date format
-- Date & time format
-- Locale
-
-### Cover
-- Source (None / First image in note / Cover property)
-- Style (Borderless / Bordered)
-- Aspect ratio (Auto / 1:1 / 3:2 / 4:3 / 16:9)
-- Orientation (Landscape / Portrait)
-- Image fit (Cover / Contain)
-- Position in card (Above title / Below title / After all)
+- Obsidian **1.8.0+** (requires Bases).
+- Desktop or mobile — the plugin is not desktop-only.
 
 ## Installation
 
-1. Download from Obsidian community plugins (pending)
-2. Or manual: copy `main.js`, `manifest.json`, `styles.css` to `card-columns/` in your vault's `.obsidian/plugins/`
+### Via BRAT (recommended for beta)
 
-## Support
+1. Install the [BRAT](https://obsidian.md/plugins/brat) plugin.
+2. `Add a beta plugin` → paste: `https://github.com/mamadaevv/card-columns`
+3. Enable **Card Columns** in Community plugins.
 
-If you find this plugin useful, consider supporting its development:
+### Manual
 
-**https://donation.streamiverse.io/mamadaevv**
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [release](https://github.com/mamadaevv/card-columns/releases).
+2. Put them in `<vault>/.obsidian/plugins/card-columns/`.
+3. Enable **Card Columns** in Community plugins.
+
+## Usage
+
+Card Columns is a **Bases view**, so it works wherever Bases does.
+
+1. Open a Bases view (e.g. a `*.base` file, or the Bases toggle on a search/all-notes view).
+2. Change the view to **Columns** from the view switcher (icon: ![Columns view icon — three vertical columns](images/columns-icon.png)).
+3. The board groups notes by the property set in **Group by** (in the Bases config). Leave it empty to group by `tags`.
+
+### Grouping by a property
+
+In the Bases view options, set **Group by → property** to the field you want columns for. For a task board:
+
+```yaml
+---
+status: In Progress
+assignee: Nik
+priority: high
+---
+```
+
+With `Group by = status`, this note lands in the **In Progress** column. Set `status: [In Progress, Blocked]` and it appears in **both** columns.
+
+### Custom column order
+
+In the Columns view settings, set **Column list** to a comma-separated order, e.g. `Todo, In Progress, Done`. Notes whose value isn't listed still show under **(No value)**.
+
+### Drag & drop
+
+Enable **Drag & drop cards between columns** (on by default). Drag a card to another column — the plugin edits the grouped property in that note's frontmatter:
+
+- Value was `Todo` → drop on `Done` → becomes `Done`.
+- Value was `Todo` → drop on `In Progress` → becomes `In Progress` (old removed).
+- A note already in `Done` dropped again on `Done` → no-op.
+
+Because it writes real frontmatter, the change is visible everywhere (graph, search, other Bases views).
+
+### Filtering
+
+The filter bar above the board lists every column value as a pill.
+
+- Click a pill → show only columns/cards matching it (**OR** mode shows cards in any selected column).
+- Click **AND** to require all selected values.
+- `Ctrl`/`Cmd`+click or right-click a pill → toggle it without clearing the others.
+- **All** clears filters.
+
+## View settings
+
+Open the gear menu in the Bases view header.
+
+| Group | Setting | Default | Notes |
+|-------|---------|---------|-------|
+| General | Open card in | Floating modal | active / modal / tab / split-right / split-down |
+| General | Card width (px) | 300 | 150–700 |
+| General | Columns per group | 1 | 1–6 |
+| General | Zebra striping | off | alternate column background |
+| General | Masonry layout | off | fill vertical gaps |
+| General | Drag & drop | on | rewrite frontmatter on drop |
+| General | Column list | empty | comma-separated fixed order |
+| Title | Wrap card titles | on | |
+| Title | Bold card titles | on | |
+| Title | Font size (px) | 14 | 11–20 |
+| Properties | Layout | Stack | Stack / Grid |
+| Properties | Wrap multi-line values | on | |
+| Properties | Font size (px) | 12 | 9–18 |
+| Properties | Date format | relative | e.g. `DD-MM-YYYY` |
+| Properties | Date & time format | relative | e.g. `DD-MM-YYYY HH:mm` |
+| Properties | Locale | auto | `en`, `ru`, `de`… |
+| Cover | Source | None | None / First image / Cover property |
+| Cover | Style | Borderless | Borderless / Bordered |
+| Cover | Aspect ratio | Auto | Auto / 1:1 / 3:2 / 4:3 / 16:9 |
+| Cover | Orientation | Landscape | Landscape / Portrait |
+| Cover | Image fit | Cover | Cover / Contain |
+| Cover | Position in card | Above title | Above title / Below title / After all properties |
+
+## Development
+
+```bash
+npm install
+npm run build      # bundles main.ts -> main.js with esbuild
+```
+
+The plugin is written in TypeScript against the Obsidian `obsidian` types and extends `BasesView`.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
