@@ -44,7 +44,11 @@ const CFG_DRAG_DROP = "dragDrop";
 const CFG_COLUMN_ORDER = "columnOrder";
 
 // Cover settings
-const CFG_COVER_SOURCE = "coverSource";
+const CFG_SHOW_COVER = "showCover";
+const CFG_COVER_SOURCE = "coverSourceProperty";
+/** Legacy key (string dropdown: "none" | "first-image" | "property") — migrated once. */
+const CFG_LEGACY_COVER_SOURCE = "coverSource";
+const CFG_COVER_MIGRATED = "coverMigrated";
 const CFG_COVER_STYLE = "coverStyle";
 const CFG_COVER_ASPECT = "coverAspect";
 const CFG_COVER_ORIENTATION = "coverOrientation";
@@ -280,15 +284,16 @@ class ColumnsView extends BasesView {
         displayName: "Cover",
         items: [
           {
+            key: CFG_SHOW_COVER,
+            type: "toggle",
+            displayName: "Show cover",
+            default: false,
+          },
+          {
             key: CFG_COVER_SOURCE,
-            type: "dropdown",
+            type: "property",
             displayName: "Source",
-            default: "none",
-            options: {
-              none: "None",
-              "first-image": "First image in note",
-              property: "Cover property",
-            },
+            placeholder: "First image in note",
           },
           {
             key: CFG_COVER_STYLE,
@@ -331,6 +336,7 @@ class ColumnsView extends BasesView {
             options: {
               cover: "Cover (crop edges)",
               contain: "Contain (fit whole)",
+              "scale-down": "Scale down (original size, max fit)",
             },
           },
           {
@@ -356,6 +362,29 @@ class ColumnsView extends BasesView {
   private cfg<T>(key: string, fallback: T): T {
     const v = this.config?.get(key);
     return (v as T) ?? fallback;
+  }
+
+  /** One-time migration from the pre-0.8.1 coverSource dropdown to the
+   *  Show cover toggle + Source property pair. Idempotent via marker key. */
+  private migrateCoverConfig(): void {
+    if (this.cfg<boolean>(CFG_COVER_MIGRATED, false)) return;
+    const legacy = this.config?.get(CFG_LEGACY_COVER_SOURCE);
+    if (typeof legacy === "string") {
+      if (legacy === "property") {
+        // Old code read the hardcoded "cover" frontmatter property
+        this.config?.set(CFG_SHOW_COVER, true);
+        this.config?.set(CFG_COVER_SOURCE, "note.cover");
+      } else if (legacy === "first-image") {
+        // Cover on, source property empty → first-image fallback
+        this.config?.set(CFG_SHOW_COVER, true);
+      }
+      // legacy === "none" → showCover stays false
+    }
+    this.config?.set(CFG_COVER_MIGRATED, true);
+    // No recursive render() here — migrateCoverConfig() runs at the top of
+    // render(), so the rest of the same render() pass already applies the
+    // migrated values. A nested render() breaks the Bases view lifecycle
+    // (the .base file fails to open).
   }
 
   private getColumnProperty(): string | null {
@@ -475,11 +504,10 @@ class ColumnsView extends BasesView {
   //  Cover
   // -----------------------------------------------------------------------
 
-  /** Resolve cover image URL for a file, or null if none found. */
+  /** Resolve cover image URL for a file, or null if none found.
+   *  Source priority: selected property (any frontmatter property holding
+   *  a path/[[link]] to an image) → fallback: first image in note. */
   private getCoverUrl(file: TFile): string | null {
-    const src = this.cfg<string>(CFG_COVER_SOURCE, "none");
-    if (src === "none") return null;
-
     // If the file itself is an image, it IS the cover
     if (/\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(file.path)) {
       return this.app.vault.getResourcePath(file);
@@ -490,8 +518,18 @@ class ColumnsView extends BasesView {
 
     let coverPath: string | null = null;
 
-    if (src === "first-image") {
-      // Find first embed that is an image
+    // 1) Selected cover source property (any property, not hardcoded)
+    const coverPropId = this.config?.getAsPropertyId(CFG_COVER_SOURCE);
+    const coverPropName = coverPropId ? parsePropertyId(coverPropId)?.name ?? null : null;
+    if (coverPropName) {
+      const raw = cache.frontmatter?.[coverPropName];
+      if (typeof raw === "string" && raw.trim()) {
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
+      }
+    }
+
+    // 2) Fallback: first image embed in the note
+    if (!coverPath) {
       const embeds = cache.embeds;
       if (embeds && embeds.length > 0) {
         for (const embed of embeds) {
@@ -500,11 +538,6 @@ class ColumnsView extends BasesView {
             break;
           }
         }
-      }
-    } else if (src === "property") {
-      const raw = cache.frontmatter?.cover;
-      if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
 
@@ -531,6 +564,8 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
+    this.migrateCoverConfig();
+
     // Snapshot the current scroll position of the .columns-board before
     // we tear it down. scrollEl is NOT the scrolling element — the
     // .columns-board inside it is (display: flex, overflow-x: auto).
@@ -937,8 +972,7 @@ class ColumnsView extends BasesView {
     }
 
     // ── Cover ────────────────────────────────────────────────────────
-    const coverSource = this.cfg<string>(CFG_COVER_SOURCE, "none");
-    const hasCover = coverSource !== "none";
+    const hasCover = this.cfg<boolean>(CFG_SHOW_COVER, false);
     let coverEl: HTMLElement | null = null;
     let coverUrl: string | null = null;
 

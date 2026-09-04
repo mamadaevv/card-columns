@@ -41,7 +41,10 @@ var CFG_ZEBRA_STRIPING = "zebraStriping";
 var CFG_MASONRY = "masonry";
 var CFG_DRAG_DROP = "dragDrop";
 var CFG_COLUMN_ORDER = "columnOrder";
-var CFG_COVER_SOURCE = "coverSource";
+var CFG_SHOW_COVER = "showCover";
+var CFG_COVER_SOURCE = "coverSourceProperty";
+var CFG_LEGACY_COVER_SOURCE = "coverSource";
+var CFG_COVER_MIGRATED = "coverMigrated";
 var CFG_COVER_STYLE = "coverStyle";
 var CFG_COVER_ASPECT = "coverAspect";
 var CFG_COVER_ORIENTATION = "coverOrientation";
@@ -245,15 +248,16 @@ var ColumnsView = class extends import_obsidian.BasesView {
         displayName: "Cover",
         items: [
           {
+            key: CFG_SHOW_COVER,
+            type: "toggle",
+            displayName: "Show cover",
+            default: false
+          },
+          {
             key: CFG_COVER_SOURCE,
-            type: "dropdown",
+            type: "property",
             displayName: "Source",
-            default: "none",
-            options: {
-              none: "None",
-              "first-image": "First image in note",
-              property: "Cover property"
-            }
+            placeholder: "First image in note"
           },
           {
             key: CFG_COVER_STYLE,
@@ -295,7 +299,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
             default: "cover",
             options: {
               cover: "Cover (crop edges)",
-              contain: "Contain (fit whole)"
+              contain: "Contain (fit whole)",
+              "scale-down": "Scale down (original size, max fit)"
             }
           },
           {
@@ -319,6 +324,21 @@ var ColumnsView = class extends import_obsidian.BasesView {
   cfg(key, fallback) {
     const v = this.config?.get(key);
     return v ?? fallback;
+  }
+  /** One-time migration from the pre-0.8.1 coverSource dropdown to the
+   *  Show cover toggle + Source property pair. Idempotent via marker key. */
+  migrateCoverConfig() {
+    if (this.cfg(CFG_COVER_MIGRATED, false)) return;
+    const legacy = this.config?.get(CFG_LEGACY_COVER_SOURCE);
+    if (typeof legacy === "string") {
+      if (legacy === "property") {
+        this.config?.set(CFG_SHOW_COVER, true);
+        this.config?.set(CFG_COVER_SOURCE, "note.cover");
+      } else if (legacy === "first-image") {
+        this.config?.set(CFG_SHOW_COVER, true);
+      }
+    }
+    this.config?.set(CFG_COVER_MIGRATED, true);
   }
   getColumnProperty() {
     const cfg = this.config;
@@ -410,17 +430,25 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   //  Cover
   // -----------------------------------------------------------------------
-  /** Resolve cover image URL for a file, or null if none found. */
+  /** Resolve cover image URL for a file, or null if none found.
+   *  Source priority: selected property (any frontmatter property holding
+   *  a path/[[link]] to an image) → fallback: first image in note. */
   getCoverUrl(file) {
-    const src = this.cfg(CFG_COVER_SOURCE, "none");
-    if (src === "none") return null;
     if (/\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(file.path)) {
       return this.app.vault.getResourcePath(file);
     }
     const cache = this.app.metadataCache.getFileCache(file);
     if (!cache) return null;
     let coverPath = null;
-    if (src === "first-image") {
+    const coverPropId = this.config?.getAsPropertyId(CFG_COVER_SOURCE);
+    const coverPropName = coverPropId ? (0, import_obsidian.parsePropertyId)(coverPropId)?.name ?? null : null;
+    if (coverPropName) {
+      const raw = cache.frontmatter?.[coverPropName];
+      if (typeof raw === "string" && raw.trim()) {
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
+      }
+    }
+    if (!coverPath) {
       const embeds = cache.embeds;
       if (embeds && embeds.length > 0) {
         for (const embed of embeds) {
@@ -429,11 +457,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
             break;
           }
         }
-      }
-    } else if (src === "property") {
-      const raw = cache.frontmatter?.cover;
-      if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
     if (!coverPath) return null;
@@ -451,6 +474,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
+    this.migrateCoverConfig();
     const oldBoard = this.containerEl.querySelector(".columns-board");
     const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
     const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
@@ -762,8 +786,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
         cardEl.classList.remove("is-dragging");
       });
     }
-    const coverSource = this.cfg(CFG_COVER_SOURCE, "none");
-    const hasCover = coverSource !== "none";
+    const hasCover = this.cfg(CFG_SHOW_COVER, false);
     let coverEl = null;
     let coverUrl = null;
     if (hasCover) {
