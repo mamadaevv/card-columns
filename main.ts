@@ -575,11 +575,6 @@ class ColumnsView extends BasesView {
     const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
     const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
     const beforeClientWidth = oldBoard?.clientWidth ?? 0;
-    console.log(
-      "[columns] render() before, scrollLeft =", beforeScrollLeft,
-      "scrollWidth =", beforeScrollWidth,
-      "clientWidth =", beforeClientWidth,
-    );
 
     this.containerEl.empty();
 
@@ -712,7 +707,6 @@ class ColumnsView extends BasesView {
     // instead of snapping to 0 or to the absolute old position.
     const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
     const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
-    console.log("[columns] restore plan: ratio =", ratio);
 
     if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
@@ -724,12 +718,6 @@ class ColumnsView extends BasesView {
         const target = Math.round(ratio * newMax);
         const was = newBoard.scrollLeft;
         newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
-        console.log(
-          "[columns] restore(): was =", was,
-          "→", newBoard.scrollLeft,
-          "newMax =", newMax,
-          "(newScrollWidth =", newScrollWidth, "newClientWidth =", newClientWidth, ")",
-        );
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
@@ -741,7 +729,7 @@ class ColumnsView extends BasesView {
     if (board) {
       const colHeights = Array.from(board.querySelectorAll<HTMLElement>(".columns-column"))
         .map((c) => c.offsetHeight);
-      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
+      void colHeights;
     }
   }
 
@@ -905,7 +893,6 @@ class ColumnsView extends BasesView {
         colEl.classList.remove("is-drop-target");
         // Suppress the click that browsers fire right after a successful drop
         this.suppressNextClick = true;
-        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
         // Remember the scroll position NOW. processFrontMatter triggers
         // metadataCache → onDataUpdated → render() which rebuilds the
         // board from scratch. Without this snapshot the new board resets

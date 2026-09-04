@@ -479,14 +479,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
     const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
     const beforeClientWidth = oldBoard?.clientWidth ?? 0;
-    console.log(
-      "[columns] render() before, scrollLeft =",
-      beforeScrollLeft,
-      "scrollWidth =",
-      beforeScrollWidth,
-      "clientWidth =",
-      beforeClientWidth
-    );
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -579,7 +571,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     }
     const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
     const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
-    console.log("[columns] restore plan: ratio =", ratio);
     if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
         const newBoard = this.containerEl.querySelector(".columns-board");
@@ -590,19 +581,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
         const target = Math.round(ratio * newMax);
         const was = newBoard.scrollLeft;
         newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
-        console.log(
-          "[columns] restore(): was =",
-          was,
-          "\u2192",
-          newBoard.scrollLeft,
-          "newMax =",
-          newMax,
-          "(newScrollWidth =",
-          newScrollWidth,
-          "newClientWidth =",
-          newClientWidth,
-          ")"
-        );
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
@@ -611,7 +589,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const board = this.containerEl.querySelector(".columns-board");
     if (board) {
       const colHeights = Array.from(board.querySelectorAll(".columns-column")).map((c) => c.offsetHeight);
-      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
     }
   }
   // -----------------------------------------------------------------------
@@ -740,7 +717,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
         e.preventDefault();
         colEl.classList.remove("is-drop-target");
         this.suppressNextClick = true;
-        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
         this.pendingScrollLeft = this.scrollEl.scrollLeft;
         void this.moveCardToColumn(filePath, sourceCol, name);
       });
