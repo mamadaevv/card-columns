@@ -739,7 +739,10 @@ class ColumnsView extends BasesView {
 
   private renderFilterBar(columnMap: Map<string, BasesEntry[]>): void {
     const tags = Array.from(columnMap.keys()).sort();
-    if (tags.length === 0 && this.activeFilters.size === 0) return;
+    // Hide the filter bar automatically when there is nothing meaningful
+    // to choose between — zero tags, or a single tag (unless an active
+    // filter is still applied, so the user can clear it).
+    if (tags.length <= 1 && this.activeFilters.size === 0) return;
 
     const barEl = this.containerEl.createDiv({ cls: "columns-filter-bar" });
     const savedH = this.cfg(CFG_FILTER_HEIGHT, 120);

@@ -596,7 +596,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   renderFilterBar(columnMap) {
     const tags = Array.from(columnMap.keys()).sort();
-    if (tags.length === 0 && this.activeFilters.size === 0) return;
+    if (tags.length <= 1 && this.activeFilters.size === 0) return;
     const barEl = this.containerEl.createDiv({ cls: "columns-filter-bar" });
     const savedH = this.cfg(CFG_FILTER_HEIGHT, 120);
     barEl.style.maxHeight = savedH + "px";
