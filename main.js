@@ -41,7 +41,10 @@ var CFG_ZEBRA_STRIPING = "zebraStriping";
 var CFG_MASONRY = "masonry";
 var CFG_DRAG_DROP = "dragDrop";
 var CFG_COLUMN_ORDER = "columnOrder";
-var CFG_COVER_SOURCE = "coverSource";
+var CFG_SHOW_COVER = "showCover";
+var CFG_COVER_SOURCE = "coverSourceProperty";
+var CFG_LEGACY_COVER_SOURCE = "coverSource";
+var CFG_COVER_MIGRATED = "coverMigrated";
 var CFG_COVER_STYLE = "coverStyle";
 var CFG_COVER_ASPECT = "coverAspect";
 var CFG_COVER_ORIENTATION = "coverOrientation";
@@ -127,7 +130,13 @@ var ColumnsView = class extends import_obsidian.BasesView {
             min: 150,
             max: 700,
             step: 10
-          },
+          }
+        ]
+      },
+      {
+        type: "group",
+        displayName: "Columns",
+        items: [
           {
             key: CFG_COLUMNS_PER_GROUP,
             type: "slider",
@@ -245,15 +254,16 @@ var ColumnsView = class extends import_obsidian.BasesView {
         displayName: "Cover",
         items: [
           {
+            key: CFG_SHOW_COVER,
+            type: "toggle",
+            displayName: "Show cover",
+            default: false
+          },
+          {
             key: CFG_COVER_SOURCE,
-            type: "dropdown",
+            type: "property",
             displayName: "Source",
-            default: "none",
-            options: {
-              none: "None",
-              "first-image": "First image in note",
-              property: "Cover property"
-            }
+            placeholder: "First image in note"
           },
           {
             key: CFG_COVER_STYLE,
@@ -295,7 +305,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
             default: "cover",
             options: {
               cover: "Cover (crop edges)",
-              contain: "Contain (fit whole)"
+              contain: "Contain (fit whole)",
+              "scale-down": "Scale down (original size, max fit)"
             }
           },
           {
@@ -320,6 +331,21 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const v = this.config?.get(key);
     return v ?? fallback;
   }
+  /** One-time migration from the pre-0.8.1 coverSource dropdown to the
+   *  Show cover toggle + Source property pair. Idempotent via marker key. */
+  migrateCoverConfig() {
+    if (this.cfg(CFG_COVER_MIGRATED, false)) return;
+    const legacy = this.config?.get(CFG_LEGACY_COVER_SOURCE);
+    if (typeof legacy === "string") {
+      if (legacy === "property") {
+        this.config?.set(CFG_SHOW_COVER, true);
+        this.config?.set(CFG_COVER_SOURCE, "note.cover");
+      } else if (legacy === "first-image") {
+        this.config?.set(CFG_SHOW_COVER, true);
+      }
+    }
+    this.config?.set(CFG_COVER_MIGRATED, true);
+  }
   getColumnProperty() {
     const cfg = this.config;
     const raw = cfg?.groupBy?.property;
@@ -328,7 +354,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       return parsed?.name ?? raw;
     }
     if (cfg?.groupBy !== void 0) return null;
-    return "tags";
+    return null;
   }
   /** First visible property = card title (like native Cards view). */
   getTitlePropertyId() {
@@ -410,17 +436,25 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   //  Cover
   // -----------------------------------------------------------------------
-  /** Resolve cover image URL for a file, or null if none found. */
+  /** Resolve cover image URL for a file, or null if none found.
+   *  Source priority: selected property (any frontmatter property holding
+   *  a path/[[link]] to an image) → fallback: first image in note. */
   getCoverUrl(file) {
-    const src = this.cfg(CFG_COVER_SOURCE, "none");
-    if (src === "none") return null;
     if (/\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(file.path)) {
       return this.app.vault.getResourcePath(file);
     }
     const cache = this.app.metadataCache.getFileCache(file);
     if (!cache) return null;
     let coverPath = null;
-    if (src === "first-image") {
+    const coverPropId = this.config?.getAsPropertyId(CFG_COVER_SOURCE);
+    const coverPropName = coverPropId ? (0, import_obsidian.parsePropertyId)(coverPropId)?.name ?? null : null;
+    if (coverPropName) {
+      const raw = cache.frontmatter?.[coverPropName];
+      if (typeof raw === "string" && raw.trim()) {
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
+      }
+    }
+    if (!coverPath) {
       const embeds = cache.embeds;
       if (embeds && embeds.length > 0) {
         for (const embed of embeds) {
@@ -429,11 +463,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
             break;
           }
         }
-      }
-    } else if (src === "property") {
-      const raw = cache.frontmatter?.cover;
-      if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
     if (!coverPath) return null;
@@ -451,18 +480,11 @@ var ColumnsView = class extends import_obsidian.BasesView {
   //  Rendering
   // -----------------------------------------------------------------------
   render() {
+    this.migrateCoverConfig();
     const oldBoard = this.containerEl.querySelector(".columns-board");
     const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
     const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
     const beforeClientWidth = oldBoard?.clientWidth ?? 0;
-    console.log(
-      "[columns] render() before, scrollLeft =",
-      beforeScrollLeft,
-      "scrollWidth =",
-      beforeScrollWidth,
-      "clientWidth =",
-      beforeClientWidth
-    );
     this.containerEl.empty();
     const entries = this.data?.data ?? [];
     if (entries.length === 0) {
@@ -471,6 +493,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       return;
     }
     const columnProp = this.getColumnProperty();
+    const isFullWidth = !columnProp;
+    if (isFullWidth && this.activeFilters.size > 0) {
+      this.activeFilters.clear();
+    }
     const columnMap = /* @__PURE__ */ new Map();
     const noValueEntries = [];
     if (!columnProp) {
@@ -551,11 +577,10 @@ var ColumnsView = class extends import_obsidian.BasesView {
       }
       const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
       if (colEntries.length === 0 && !isCustomList) continue;
-      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
+      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry, isFullWidth);
     }
     const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
     const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
-    console.log("[columns] restore plan: ratio =", ratio);
     if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
         const newBoard = this.containerEl.querySelector(".columns-board");
@@ -566,19 +591,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
         const target = Math.round(ratio * newMax);
         const was = newBoard.scrollLeft;
         newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
-        console.log(
-          "[columns] restore(): was =",
-          was,
-          "\u2192",
-          newBoard.scrollLeft,
-          "newMax =",
-          newMax,
-          "(newScrollWidth =",
-          newScrollWidth,
-          "newClientWidth =",
-          newClientWidth,
-          ")"
-        );
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
@@ -587,7 +599,6 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const board = this.containerEl.querySelector(".columns-board");
     if (board) {
       const colHeights = Array.from(board.querySelectorAll(".columns-column")).map((c) => c.offsetHeight);
-      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
     }
   }
   // -----------------------------------------------------------------------
@@ -670,28 +681,32 @@ var ColumnsView = class extends import_obsidian.BasesView {
   // -----------------------------------------------------------------------
   //  Column & Card
   // -----------------------------------------------------------------------
-  renderColumn(boardEl, name, entries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry) {
-    const actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
+  renderColumn(boardEl, name, entries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry, isFullWidth) {
     const colEl = boardEl.createDiv({ cls: "columns-column" });
-    const gapTotal = (actualCols - 1) * 12;
-    const paddingOverhead = 45;
-    const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
-    if (columnsPerGroup > 1) {
-      colEl.classList.add("is-multi-column");
-      colEl.style.flexBasis = colWidth + "px";
-      colEl.style.maxWidth = colWidth + "px";
+    let actualCols = 1;
+    if (isFullWidth) {
+      colEl.classList.add("is-full-width");
+      colEl.style.flexBasis = "100%";
+      colEl.style.maxWidth = "none";
     } else {
+      actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
+      const gapTotal = (actualCols - 1) * 12;
+      const paddingOverhead = 45;
+      const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
+      if (columnsPerGroup > 1) colEl.classList.add("is-multi-column");
       colEl.style.flexBasis = colWidth + "px";
       colEl.style.maxWidth = colWidth + "px";
     }
     if (isZebra && colIdx % 2 === 0) {
       colEl.classList.add("is-zebra-even");
     }
-    const headerEl = colEl.createDiv({ cls: "columns-column-header" });
-    const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
-    titleSpan.textContent = name;
-    const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
-    countSpan.textContent = String(entries.length);
+    if (!isFullWidth) {
+      const headerEl = colEl.createDiv({ cls: "columns-column-header" });
+      const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
+      titleSpan.textContent = name;
+      const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
+      countSpan.textContent = String(entries.length);
+    }
     const dragDropEnabled = this.cfg(CFG_DRAG_DROP, true);
     if (dragDropEnabled) {
       colEl.addEventListener("dragover", (e) => {
@@ -716,13 +731,18 @@ var ColumnsView = class extends import_obsidian.BasesView {
         e.preventDefault();
         colEl.classList.remove("is-drop-target");
         this.suppressNextClick = true;
-        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
         this.pendingScrollLeft = this.scrollEl.scrollLeft;
         void this.moveCardToColumn(filePath, sourceCol, name);
       });
     }
     let cardsEl;
-    if (columnsPerGroup > 1) {
+    if (isFullWidth) {
+      cardsEl = colEl.createDiv({ cls: "columns-cards" });
+      cardsEl.style.display = "grid";
+      cardsEl.style.gridTemplateColumns = `repeat(auto-fill, ${cardWidth}px)`;
+      cardsEl.style.gap = "12px";
+      cardsEl.style.alignContent = "start";
+    } else if (columnsPerGroup > 1) {
       const scrollWrapper = colEl.createDiv({ cls: "columns-cards-scroll" });
       cardsEl = scrollWrapper.createDiv({ cls: "columns-cards" });
       cardsEl.classList.add("is-multi-column");
@@ -762,8 +782,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
         cardEl.classList.remove("is-dragging");
       });
     }
-    const coverSource = this.cfg(CFG_COVER_SOURCE, "none");
-    const hasCover = coverSource !== "none";
+    const hasCover = this.cfg(CFG_SHOW_COVER, false);
     let coverEl = null;
     let coverUrl = null;
     if (hasCover) {

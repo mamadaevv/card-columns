@@ -44,7 +44,11 @@ const CFG_DRAG_DROP = "dragDrop";
 const CFG_COLUMN_ORDER = "columnOrder";
 
 // Cover settings
-const CFG_COVER_SOURCE = "coverSource";
+const CFG_SHOW_COVER = "showCover";
+const CFG_COVER_SOURCE = "coverSourceProperty";
+/** Legacy key (string dropdown: "none" | "first-image" | "property") — migrated once. */
+const CFG_LEGACY_COVER_SOURCE = "coverSource";
+const CFG_COVER_MIGRATED = "coverMigrated";
 const CFG_COVER_STYLE = "coverStyle";
 const CFG_COVER_ASPECT = "coverAspect";
 const CFG_COVER_ORIENTATION = "coverOrientation";
@@ -163,6 +167,12 @@ class ColumnsView extends BasesView {
             max: 700,
             step: 10,
           },
+        ],
+      },
+      {
+        type: "group",
+        displayName: "Columns",
+        items: [
           {
             key: CFG_COLUMNS_PER_GROUP,
             type: "slider",
@@ -280,15 +290,16 @@ class ColumnsView extends BasesView {
         displayName: "Cover",
         items: [
           {
+            key: CFG_SHOW_COVER,
+            type: "toggle",
+            displayName: "Show cover",
+            default: false,
+          },
+          {
             key: CFG_COVER_SOURCE,
-            type: "dropdown",
+            type: "property",
             displayName: "Source",
-            default: "none",
-            options: {
-              none: "None",
-              "first-image": "First image in note",
-              property: "Cover property",
-            },
+            placeholder: "First image in note",
           },
           {
             key: CFG_COVER_STYLE,
@@ -331,6 +342,7 @@ class ColumnsView extends BasesView {
             options: {
               cover: "Cover (crop edges)",
               contain: "Contain (fit whole)",
+              "scale-down": "Scale down (original size, max fit)",
             },
           },
           {
@@ -358,6 +370,29 @@ class ColumnsView extends BasesView {
     return (v as T) ?? fallback;
   }
 
+  /** One-time migration from the pre-0.8.1 coverSource dropdown to the
+   *  Show cover toggle + Source property pair. Idempotent via marker key. */
+  private migrateCoverConfig(): void {
+    if (this.cfg<boolean>(CFG_COVER_MIGRATED, false)) return;
+    const legacy = this.config?.get(CFG_LEGACY_COVER_SOURCE);
+    if (typeof legacy === "string") {
+      if (legacy === "property") {
+        // Old code read the hardcoded "cover" frontmatter property
+        this.config?.set(CFG_SHOW_COVER, true);
+        this.config?.set(CFG_COVER_SOURCE, "note.cover");
+      } else if (legacy === "first-image") {
+        // Cover on, source property empty → first-image fallback
+        this.config?.set(CFG_SHOW_COVER, true);
+      }
+      // legacy === "none" → showCover stays false
+    }
+    this.config?.set(CFG_COVER_MIGRATED, true);
+    // No recursive render() here — migrateCoverConfig() runs at the top of
+    // render(), so the rest of the same render() pass already applies the
+    // migrated values. A nested render() breaks the Bases view lifecycle
+    // (the .base file fails to open).
+  }
+
   private getColumnProperty(): string | null {
     const cfg = this.config as any;
     const raw: string | undefined = cfg?.groupBy?.property;
@@ -367,8 +402,8 @@ class ColumnsView extends BasesView {
     }
     // If groupBy is explicitly configured but empty (no property selected), show no grouping
     if (cfg?.groupBy !== undefined) return null;
-    // Default: file.tags
-    return "tags";
+    // No groupBy configured at all → single full-width column (no grouping)
+    return null;
   }
 
   /** First visible property = card title (like native Cards view). */
@@ -475,11 +510,10 @@ class ColumnsView extends BasesView {
   //  Cover
   // -----------------------------------------------------------------------
 
-  /** Resolve cover image URL for a file, or null if none found. */
+  /** Resolve cover image URL for a file, or null if none found.
+   *  Source priority: selected property (any frontmatter property holding
+   *  a path/[[link]] to an image) → fallback: first image in note. */
   private getCoverUrl(file: TFile): string | null {
-    const src = this.cfg<string>(CFG_COVER_SOURCE, "none");
-    if (src === "none") return null;
-
     // If the file itself is an image, it IS the cover
     if (/\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(file.path)) {
       return this.app.vault.getResourcePath(file);
@@ -490,8 +524,18 @@ class ColumnsView extends BasesView {
 
     let coverPath: string | null = null;
 
-    if (src === "first-image") {
-      // Find first embed that is an image
+    // 1) Selected cover source property (any property, not hardcoded)
+    const coverPropId = this.config?.getAsPropertyId(CFG_COVER_SOURCE);
+    const coverPropName = coverPropId ? parsePropertyId(coverPropId)?.name ?? null : null;
+    if (coverPropName) {
+      const raw = cache.frontmatter?.[coverPropName];
+      if (typeof raw === "string" && raw.trim()) {
+        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
+      }
+    }
+
+    // 2) Fallback: first image embed in the note
+    if (!coverPath) {
       const embeds = cache.embeds;
       if (embeds && embeds.length > 0) {
         for (const embed of embeds) {
@@ -500,11 +544,6 @@ class ColumnsView extends BasesView {
             break;
           }
         }
-      }
-    } else if (src === "property") {
-      const raw = cache.frontmatter?.cover;
-      if (typeof raw === "string" && raw.trim()) {
-        coverPath = raw.trim().replace(/^\[\[|\]\]$/g, "");
       }
     }
 
@@ -531,6 +570,8 @@ class ColumnsView extends BasesView {
   // -----------------------------------------------------------------------
 
   render(): void {
+    this.migrateCoverConfig();
+
     // Snapshot the current scroll position of the .columns-board before
     // we tear it down. scrollEl is NOT the scrolling element — the
     // .columns-board inside it is (display: flex, overflow-x: auto).
@@ -540,11 +581,6 @@ class ColumnsView extends BasesView {
     const beforeScrollLeft = oldBoard?.scrollLeft ?? 0;
     const beforeScrollWidth = oldBoard?.scrollWidth ?? 0;
     const beforeClientWidth = oldBoard?.clientWidth ?? 0;
-    console.log(
-      "[columns] render() before, scrollLeft =", beforeScrollLeft,
-      "scrollWidth =", beforeScrollWidth,
-      "clientWidth =", beforeClientWidth,
-    );
 
     this.containerEl.empty();
 
@@ -557,6 +593,14 @@ class ColumnsView extends BasesView {
     }
 
     const columnProp = this.getColumnProperty();
+    const isFullWidth = !columnProp;
+
+    // In ungrouped view there are no tag/value columns to filter by, so any
+    // stale filters left over from a previous grouping must be cleared —
+    // otherwise applyFilters() drops every card ("N results" but nothing shown).
+    if (isFullWidth && this.activeFilters.size > 0) {
+      this.activeFilters.clear();
+    }
 
     // Build column map: value → BasesEntry[]
     const columnMap = new Map<string, BasesEntry[]>();
@@ -665,7 +709,7 @@ class ColumnsView extends BasesView {
       // column from the user's list is a valid kanban lane.
       if (colEntries.length === 0 && !isCustomList) continue;
 
-      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
+      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry, isFullWidth);
     }
 
     // Restore the scroll position we captured at the top of render().
@@ -677,7 +721,6 @@ class ColumnsView extends BasesView {
     // instead of snapping to 0 or to the absolute old position.
     const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
     const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
-    console.log("[columns] restore plan: ratio =", ratio);
 
     if (beforeScrollLeft > 0 && ratio > 0) {
       const restore = () => {
@@ -689,12 +732,6 @@ class ColumnsView extends BasesView {
         const target = Math.round(ratio * newMax);
         const was = newBoard.scrollLeft;
         newBoard.scrollLeft = Math.max(0, Math.min(target, newMax));
-        console.log(
-          "[columns] restore(): was =", was,
-          "→", newBoard.scrollLeft,
-          "newMax =", newMax,
-          "(newScrollWidth =", newScrollWidth, "newClientWidth =", newClientWidth, ")",
-        );
       };
       requestAnimationFrame(() => requestAnimationFrame(restore));
       setTimeout(restore, 50);
@@ -706,7 +743,7 @@ class ColumnsView extends BasesView {
     if (board) {
       const colHeights = Array.from(board.querySelectorAll<HTMLElement>(".columns-column"))
         .map((c) => c.offsetHeight);
-      console.log("[columns] layout: board.scrollHeight =", board.scrollHeight, "clientHeight =", board.clientHeight, "colHeights =", colHeights);
+      void colHeights;
     }
   }
 
@@ -814,20 +851,24 @@ class ColumnsView extends BasesView {
     isZebra: boolean,
     colIdx: number,
     isMasonry: boolean,
+    isFullWidth: boolean,
   ): void {
-    // Width math: an empty custom-list lane should look the same as a
-    // column with one card. Use Math.max(1, ...) so the drop target is
-    // the same width as a populated single-card column.
-    const actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
     const colEl = boardEl.createDiv({ cls: "columns-column" });
-    const gapTotal = (actualCols - 1) * 12;
-    const paddingOverhead = 45; // 24 column pad + 16 cards pad + 1 border-right + 4 safety
-    const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
-    if (columnsPerGroup > 1) {
-      colEl.classList.add("is-multi-column");
-      colEl.style.flexBasis = colWidth + "px";
-      colEl.style.maxWidth = colWidth + "px";
+    let actualCols = 1;
+    if (isFullWidth) {
+      // Ungrouped view: column spans the whole board; card width ignored
+      colEl.classList.add("is-full-width");
+      colEl.style.flexBasis = "100%";
+      colEl.style.maxWidth = "none";
     } else {
+      // Width math: an empty custom-list lane should look the same as a
+      // column with one card. Use Math.max(1, ...) so the drop target is
+      // the same width as a populated single-card column.
+      actualCols = Math.max(1, Math.min(entries.length, columnsPerGroup));
+      const gapTotal = (actualCols - 1) * 12;
+      const paddingOverhead = 45; // 24 column pad + 16 cards pad + 1 border-right + 4 safety
+      const colWidth = cardWidth * actualCols + gapTotal + paddingOverhead;
+      if (columnsPerGroup > 1) colEl.classList.add("is-multi-column");
       colEl.style.flexBasis = colWidth + "px";
       colEl.style.maxWidth = colWidth + "px";
     }
@@ -836,11 +877,13 @@ class ColumnsView extends BasesView {
       colEl.classList.add("is-zebra-even");
     }
 
-    const headerEl = colEl.createDiv({ cls: "columns-column-header" });
-    const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
-    titleSpan.textContent = name;
-    const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
-    countSpan.textContent = String(entries.length);
+    if (!isFullWidth) {
+      const headerEl = colEl.createDiv({ cls: "columns-column-header" });
+      const titleSpan = headerEl.createSpan({ cls: "columns-column-title" });
+      titleSpan.textContent = name;
+      const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
+      countSpan.textContent = String(entries.length);
+    }
 
     // Drag & drop — wire up drop zone on the whole column
     const dragDropEnabled = this.cfg<boolean>(CFG_DRAG_DROP, true);
@@ -870,7 +913,6 @@ class ColumnsView extends BasesView {
         colEl.classList.remove("is-drop-target");
         // Suppress the click that browsers fire right after a successful drop
         this.suppressNextClick = true;
-        console.log("[columns] drop: capturing scrollLeft =", this.scrollEl.scrollLeft, "source =", sourceCol, "target =", name);
         // Remember the scroll position NOW. processFrontMatter triggers
         // metadataCache → onDataUpdated → render() which rebuilds the
         // board from scratch. Without this snapshot the new board resets
@@ -881,7 +923,14 @@ class ColumnsView extends BasesView {
     }
 
     let cardsEl: HTMLElement;
-    if (columnsPerGroup > 1) {
+    if (isFullWidth) {
+      // Ungrouped: cards keep their width and flow into as many columns as fit
+      cardsEl = colEl.createDiv({ cls: "columns-cards" });
+      cardsEl.style.display = "grid";
+      cardsEl.style.gridTemplateColumns = `repeat(auto-fill, ${cardWidth}px)`;
+      cardsEl.style.gap = "12px";
+      cardsEl.style.alignContent = "start";
+    } else if (columnsPerGroup > 1) {
       // Scroll wrapper keeps header outside the scroll container
       const scrollWrapper = colEl.createDiv({ cls: "columns-cards-scroll" });
       cardsEl = scrollWrapper.createDiv({ cls: "columns-cards" });
@@ -937,8 +986,7 @@ class ColumnsView extends BasesView {
     }
 
     // ── Cover ────────────────────────────────────────────────────────
-    const coverSource = this.cfg<string>(CFG_COVER_SOURCE, "none");
-    const hasCover = coverSource !== "none";
+    const hasCover = this.cfg<boolean>(CFG_SHOW_COVER, false);
     let coverEl: HTMLElement | null = null;
     let coverUrl: string | null = null;
 

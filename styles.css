@@ -180,6 +180,20 @@
   grid-template-columns: none;
 }
 
+.columns-column.is-full-width {
+  min-width: 0;
+  max-width: none;
+  border-right: none;
+  padding: 0; /* drop the default 12px L/R column padding */
+}
+
+/* No header in ungrouped view → restore top breathing room (was provided
+   by the column-header padding before). 20px L/R matches the grouped column's
+   12px (column) + 8px (cards) so cards align, with no double padding. */
+.columns-column.is-full-width > .columns-cards {
+  padding: 20px 20px 24px;
+}
+
 .columns-column.is-multi-column .columns-cards.is-masonry .columns-card {
   break-inside: avoid;
   page-break-inside: avoid;
@@ -508,11 +522,17 @@
 }
 
 .columns-column.is-drop-target {
-  /* No visual treatment on the column itself — the dragging card already
-     provides enough feedback about where it will land. */
+  /* Thin accent outline around the column + a faint, diffuse inner glow.
+     Both are inset box-shadows so they never cause a layout shift and
+     are not clipped by the board's overflow. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 50%, transparent),
+    inset 0 0 30px -8px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+  transition: box-shadow 0.15s ease;
 }
 
 .columns-column.is-drop-target .columns-column-header {
-  /* Intentionally left empty — column stays neutral during drag. */
+  color: var(--interactive-accent);
+  transition: color 0.15s ease;
 }
 
