@@ -110,6 +110,20 @@
   padding: 0 12px;
 }
 
+/* Full-width mode when no grouping: stretch across the board, no header */
+.columns-column.is-full-width-no-group {
+  min-width: unset;
+  max-width: none;
+  flex-shrink: 1;
+  flex: 1 1 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.columns-column.is-full-width-no-group .columns-cards {
+  padding: 0 8px 12px;
+}
+
 .columns-column-header {
   display: flex;
   align-items: center;

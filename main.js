@@ -41,6 +41,7 @@ var CFG_ZEBRA_STRIPING = "zebraStriping";
 var CFG_MASONRY = "masonry";
 var CFG_DRAG_DROP = "dragDrop";
 var CFG_COLUMN_ORDER = "columnOrder";
+var CFG_FULL_WIDTH_NO_GROUP = "fullWidthNoGroup";
 var CFG_SHOW_COVER = "showCover";
 var CFG_COVER_SOURCE = "coverSourceProperty";
 var CFG_LEGACY_COVER_SOURCE = "coverSource";
@@ -164,6 +165,12 @@ var ColumnsView = class extends import_obsidian.BasesView {
             displayName: "Column list (comma-separated, leave empty for auto)",
             placeholder: "Todo, InProgress, Done",
             default: ""
+          },
+          {
+            key: CFG_FULL_WIDTH_NO_GROUP,
+            type: "toggle",
+            displayName: "Full width when no grouping",
+            default: true
           }
         ]
       },
@@ -348,7 +355,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
       return parsed?.name ?? raw;
     }
     if (cfg?.groupBy !== void 0) return null;
-    return "tags";
+    return null;
   }
   /** First visible property = card title (like native Cards view). */
   getTitlePropertyId() {
@@ -360,6 +367,9 @@ var ColumnsView = class extends import_obsidian.BasesView {
   getCardWidth() {
     const v = this.cfg(CFG_CARD_WIDTH, 300);
     return v >= 150 && v <= 700 ? v : 300;
+  }
+  getFullWidthNoGroup() {
+    return this.cfg(CFG_FULL_WIDTH_NO_GROUP, true);
   }
   getOpenBehavior() {
     const v = this.cfg(CFG_OPEN_BEHAVIOR, "modal");
@@ -547,27 +557,61 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const boardEl = this.containerEl.createDiv({ cls: "columns-board" });
     const isZebra = this.cfg(CFG_ZEBRA_STRIPING, false);
     const isMasonry = this.cfg(CFG_MASONRY, false);
+    const fullWidthNoGroup = this.getFullWidthNoGroup() && !columnProp;
     const isCustomList = !!customRaw;
-    for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
-      const colName = colNames[colIdx];
-      let colEntries;
-      if (colName === "(No value)") {
-        const paths = noValueEntries.map((e) => e.file?.path ?? "");
-        const filteredPaths = applyFilters(paths);
-        colEntries = noValueEntries.filter(
-          (e) => e.file?.path && filteredPaths.includes(e.file.path)
-        );
-      } else {
-        const raw = columnMap.get(colName) ?? [];
-        const paths = raw.map((e) => e.file?.path ?? "");
-        const filteredPaths = applyFilters(paths);
-        colEntries = raw.filter(
-          (e) => e.file?.path && filteredPaths.includes(e.file.path)
+    if (fullWidthNoGroup && colNames.length === 1) {
+      const colName = colNames[0];
+      const raw = columnMap.get(colName) ?? [];
+      const paths = raw.map((e) => e.file?.path ?? "");
+      const filteredPaths = applyFilters(paths);
+      const colEntries = raw.filter(
+        (e) => e.file?.path && filteredPaths.includes(e.file.path)
+      );
+      const colEl = boardEl.createDiv({ cls: "columns-column" });
+      colEl.classList.add("is-full-width-no-group");
+      colEl.style.flexBasis = "100%";
+      colEl.style.maxWidth = "none";
+      const cardsEl = colEl.createDiv({ cls: "columns-cards" });
+      cardsEl.classList.add("is-full-width-cards");
+      cardsEl.style.display = "grid";
+      cardsEl.style.gridTemplateColumns = "repeat(auto-fill, minmax(" + cardWidth + "px, 1fr))";
+      cardsEl.style.gap = "12px";
+      cardsEl.style.padding = "0 8px 12px";
+      for (const entry of colEntries) {
+        this.renderCard(cardsEl, entry, visibleProps, colName, dragDropEnabled);
+      }
+    } else {
+      for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
+        const colName = colNames[colIdx];
+        let colEntries;
+        if (colName === "(No value)") {
+          const paths = noValueEntries.map((e) => e.file?.path ?? "");
+          const filteredPaths = applyFilters(paths);
+          colEntries = noValueEntries.filter(
+            (e) => e.file?.path && filteredPaths.includes(e.file.path)
+          );
+        } else {
+          const raw = columnMap.get(colName) ?? [];
+          const paths = raw.map((e) => e.file?.path ?? "");
+          const filteredPaths = applyFilters(paths);
+          colEntries = raw.filter(
+            (e) => e.file?.path && filteredPaths.includes(e.file.path)
+          );
+        }
+        const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
+        if (colEntries.length === 0 && !isCustomList) continue;
+        this.renderColumn(
+          boardEl,
+          colName,
+          colEntries,
+          cardWidth,
+          visibleProps,
+          columnsPerGroup,
+          isZebra,
+          colIdx,
+          isMasonry
         );
       }
-      const columnsPerGroup = this.cfg(CFG_COLUMNS_PER_GROUP, 1);
-      if (colEntries.length === 0 && !isCustomList) continue;
-      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
     const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
     const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
@@ -589,6 +633,7 @@ var ColumnsView = class extends import_obsidian.BasesView {
     const board = this.containerEl.querySelector(".columns-board");
     if (board) {
       const colHeights = Array.from(board.querySelectorAll(".columns-column")).map((c) => c.offsetHeight);
+      void colHeights;
     }
   }
   // -----------------------------------------------------------------------
@@ -693,8 +738,8 @@ var ColumnsView = class extends import_obsidian.BasesView {
     titleSpan.textContent = name;
     const countSpan = headerEl.createSpan({ cls: "columns-column-count" });
     countSpan.textContent = String(entries.length);
-    const dragDropEnabled = this.cfg(CFG_DRAG_DROP, true);
-    if (dragDropEnabled) {
+    const dragDropEnabled2 = this.cfg(CFG_DRAG_DROP, true);
+    if (dragDropEnabled2) {
       colEl.addEventListener("dragover", (e) => {
         const dt = e.dataTransfer;
         if (!dt) return;
@@ -737,14 +782,14 @@ var ColumnsView = class extends import_obsidian.BasesView {
       cardsEl = colEl.createDiv({ cls: "columns-cards" });
     }
     for (const entry of entries) {
-      this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled);
+      this.renderCard(cardsEl, entry, visibleProps, name, dragDropEnabled2);
     }
   }
-  renderCard(cardsEl, entry, visibleProps, columnName, dragDropEnabled) {
+  renderCard(cardsEl, entry, visibleProps, columnName, dragDropEnabled2) {
     const file = entry.file;
     if (!(file instanceof import_obsidian.TFile)) return;
     const cardEl = cardsEl.createDiv({ cls: "columns-card" });
-    if (dragDropEnabled) {
+    if (dragDropEnabled2) {
       cardEl.draggable = true;
       cardEl.addEventListener("dragstart", (e) => {
         const dt = e.dataTransfer;

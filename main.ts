@@ -42,6 +42,7 @@ const CFG_ZEBRA_STRIPING = "zebraStriping";
 const CFG_MASONRY = "masonry";
 const CFG_DRAG_DROP = "dragDrop";
 const CFG_COLUMN_ORDER = "columnOrder";
+const CFG_FULL_WIDTH_NO_GROUP = "fullWidthNoGroup";
 
 // Cover settings
 const CFG_SHOW_COVER = "showCover";
@@ -200,6 +201,12 @@ class ColumnsView extends BasesView {
             displayName: "Column list (comma-separated, leave empty for auto)",
             placeholder: "Todo, InProgress, Done",
             default: "",
+          },
+          {
+            key: CFG_FULL_WIDTH_NO_GROUP,
+            type: "toggle",
+            displayName: "Full width when no grouping",
+            default: true,
           },
         ],
       },
@@ -396,8 +403,8 @@ class ColumnsView extends BasesView {
     }
     // If groupBy is explicitly configured but empty (no property selected), show no grouping
     if (cfg?.groupBy !== undefined) return null;
-    // Default: file.tags
-    return "tags";
+    // Default: no grouping — return null so full-width no-group mode activates
+    return null;
   }
 
   /** First visible property = card title (like native Cards view). */
@@ -411,6 +418,10 @@ class ColumnsView extends BasesView {
   private getCardWidth(): number {
     const v = this.cfg<number>(CFG_CARD_WIDTH, 300);
     return v >= 150 && v <= 700 ? v : 300;
+  }
+
+  private getFullWidthNoGroup(): boolean {
+    return this.cfg<boolean>(CFG_FULL_WIDTH_NO_GROUP, true);
   }
 
   private getOpenBehavior(): string {
@@ -670,41 +681,79 @@ class ColumnsView extends BasesView {
     const isZebra = this.cfg<boolean>(CFG_ZEBRA_STRIPING, false);
     const isMasonry = this.cfg<boolean>(CFG_MASONRY, false);
 
+    // Full-width mode when no grouping: single stretchable area without a column header
+    const fullWidthNoGroup = this.getFullWidthNoGroup() && !columnProp;
+
     const isCustomList = !!customRaw;
-    for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
-      const colName = colNames[colIdx];
-      let colEntries: BasesEntry[];
-      if (colName === "(No value)") {
-        const paths = noValueEntries.map((e) => e.file?.path ?? "");
-        const filteredPaths = applyFilters(paths);
-        colEntries = noValueEntries.filter(
-          (e) => e.file?.path && filteredPaths.includes(e.file.path),
-        );
-      } else {
-        const raw = columnMap.get(colName) ?? [];
-        const paths = raw.map((e) => e.file?.path ?? "");
-        const filteredPaths = applyFilters(paths);
-        colEntries = raw.filter(
-          (e) => e.file?.path && filteredPaths.includes(e.file.path),
+
+    // Full-width mode when no grouping: render one stretchable column without header
+    if (fullWidthNoGroup && colNames.length === 1) {
+      const colName = colNames[0];
+      const raw = columnMap.get(colName) ?? [];
+      const paths = raw.map((e) => e.file?.path ?? "");
+      const filteredPaths = applyFilters(paths);
+      const colEntries = raw.filter(
+        (e) => e.file?.path && filteredPaths.includes(e.file.path),
+      );
+
+      const colEl = boardEl.createDiv({ cls: "columns-column" });
+      colEl.classList.add("is-full-width-no-group");
+      colEl.style.flexBasis = "100%";
+      colEl.style.maxWidth = "none";
+
+      const cardsEl = colEl.createDiv({ cls: "columns-cards" });
+      cardsEl.classList.add("is-full-width-cards");
+      cardsEl.style.display = "grid";
+      cardsEl.style.gridTemplateColumns =
+        "repeat(auto-fill, minmax(" + cardWidth + "px, 1fr))";
+      cardsEl.style.gap = "12px";
+      cardsEl.style.padding = "0 8px 12px";
+
+      for (const entry of colEntries) {
+        this.renderCard(cardsEl, entry, visibleProps, colName, dragDropEnabled);
+      }
+    } else {
+      for (let colIdx = 0; colIdx < colNames.length; colIdx++) {
+        const colName = colNames[colIdx];
+        let colEntries: BasesEntry[];
+        if (colName === "(No value)") {
+          const paths = noValueEntries.map((e) => e.file?.path ?? "");
+          const filteredPaths = applyFilters(paths);
+          colEntries = noValueEntries.filter(
+            (e) => e.file?.path && filteredPaths.includes(e.file.path),
+          );
+        } else {
+          const raw = columnMap.get(colName) ?? [];
+          const paths = raw.map((e) => e.file?.path ?? "");
+          const filteredPaths = applyFilters(paths);
+          colEntries = raw.filter(
+            (e) => e.file?.path && filteredPaths.includes(e.file.path),
+          );
+        }
+
+        const columnsPerGroup = this.cfg<number>(CFG_COLUMNS_PER_GROUP, 1);
+
+        // Hide empty columns only in auto mode. In custom mode, an empty
+        // column from the user's list is a valid kanban lane.
+        if (colEntries.length === 0 && !isCustomList) continue;
+
+        this.renderColumn(
+          boardEl,
+          colName,
+          colEntries,
+          cardWidth,
+          visibleProps,
+          columnsPerGroup,
+          isZebra,
+          colIdx,
+          isMasonry,
         );
       }
-
-      const columnsPerGroup = this.cfg<number>(CFG_COLUMNS_PER_GROUP, 1);
-
-      // Hide empty columns only in auto mode. In custom mode, an empty
-      // column from the user's list is a valid kanban lane.
-      if (colEntries.length === 0 && !isCustomList) continue;
-
-      this.renderColumn(boardEl, colName, colEntries, cardWidth, visibleProps, columnsPerGroup, isZebra, colIdx, isMasonry);
     }
 
     // Restore the scroll position we captured at the top of render().
     // requestAnimationFrame ensures the new board is laid out — without it
     // the browser clamps scrollLeft to the (still-zero) scrollWidth and
-    // Restore the scroll position we captured at the top of render().
-    // Use proportional scroll (ratio) so a board that grew or shrank
-    // after the rebuild keeps the user looking at the same area
-    // instead of snapping to 0 or to the absolute old position.
     const oldMax = Math.max(0, beforeScrollWidth - beforeClientWidth);
     const ratio = oldMax > 0 ? beforeScrollLeft / oldMax : 0;
 
